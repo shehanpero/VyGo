@@ -12,3 +12,11 @@ pages_build_output_dir = "dist"
 [[kv_namespaces]]
 binding = "VYGO_KV"
 id = "d6349ad6d3624af8a628b4a46dac131f"
+
+# Cloudflare D1 (SQLite) cloud copy of the live database. Refreshed by
+# scripts/sync-d1.ps1 (export H2 -> convert -> d1 execute). Available to Pages
+# Functions as env.DB. Read-only copy; the Spring backend does not use it.
+[[d1_databases]]
+binding = "DB"
+database_name = "vygo"
+database_id = "b249d515-5388-45c7-a97b-0128fdcef064"
