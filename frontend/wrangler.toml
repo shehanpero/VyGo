@@ -1,0 +1,14 @@
+# Cloudflare Pages config for the VyGo frontend.
+# Deploy from the `frontend` directory:
+#   npx wrangler pages deploy dist --project-name vygo-perovin
+# Built with the default same-origin API base (/api/v1); the Pages Functions
+# in ./functions proxy /api/* and /uploads/* to the live backend (see below).
+name = "vygo-perovin"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "dist"
+
+# The current backend origin (public tunnel URL) is stored here at runtime by
+# scripts/start-vygo.ps1, so the site self-heals when the tunnel URL changes.
+[[kv_namespaces]]
+binding = "VYGO_KV"
+id = "d6349ad6d3624af8a628b4a46dac131f"

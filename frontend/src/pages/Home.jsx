@@ -396,8 +396,8 @@ export default function Home() {
           <Reveal delay={0.3}>
             <form onSubmit={search} className="mx-auto mt-10 max-w-4xl">
               <div className="glow-border glass-strong rounded-2xl p-4 shadow-2xl shadow-black/40">
-              <div className="grid gap-3 lg:grid-cols-[1fr_auto_1fr_minmax(0,11rem)]">
-                <div>
+              <div className="grid grid-cols-1 gap-3 lg:grid-cols-[1fr_auto_1fr_minmax(0,11rem)]">
+                <div className="min-w-0">
                   <label className="label" htmlFor="home-from">From</label>
                   <div className="relative">
                     <FaMapMarkerAlt className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-nexus-400" />
@@ -428,7 +428,7 @@ export default function Home() {
                     <FaExchangeAlt className="text-sm" />
                   </motion.button>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="label" htmlFor="home-to">To</label>
                   <div className="relative">
                     <FaFlagCheckered className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-nexus-400" />
@@ -444,7 +444,7 @@ export default function Home() {
                      />
                   </div>
                 </div>
-                <div>
+                <div className="min-w-0">
                   <label className="label" htmlFor="home-date">Date</label>
                   <div className="relative">
                     <FaCalendarDay className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-nexus-400" />

@@ -115,6 +115,45 @@ export default defineConfig({
     // Bind 0.0.0.0 so the Expo WebView on a phone on the same LAN can reach the
     // dev server at http://<PC-LAN-IP>:5173.
     host: true,
+    // Allow the temporary Cloudflare quick-tunnel hostname to reach the dev
+    // server (Vite blocks unknown Host headers by default).
+    allowedHosts: [
+      '.trycloudflare.com',
+      '.loca.lt',
+      '.serveo.net',
+      '.serveousercontent.com',
+      '.ngrok-free.app',
+      '.ngrok.io',
+      '.lhr.life',
+      '.localhost.run',
+      '.pinggy.io',
+    ],
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/uploads': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
+  },
+  // Same host/proxy rules for `vite preview` (serves the production build).
+  preview: {
+    port: 4173,
+    host: true,
+    allowedHosts: [
+      '.trycloudflare.com',
+      '.loca.lt',
+      '.serveo.net',
+      '.serveousercontent.com',
+      '.ngrok-free.app',
+      '.ngrok.io',
+      '.lhr.life',
+      '.localhost.run',
+      '.pinggy.io',
+    ],
     proxy: {
       '/api': {
         target: 'http://localhost:8080',

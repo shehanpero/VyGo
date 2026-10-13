@@ -9,10 +9,26 @@ export function isNativePlatform() {
   // The Expo shell injects VYGO_NATIVE before content loads; Capacitor sets
   // window.Capacitor. Either way the API base must come from local settings.
   if (window.VYGO_NATIVE === true) return true
-  return Boolean(window.Capacitor && window.Capacitor.isNativePlatform)
+  // On web, @capacitor/core still defines window.Capacitor with
+  // isNativePlatform() returning false — so we must CALL it, not just test
+  // for its existence (which is always truthy on every browser).
+  const cap = window.Capacitor
+  if (cap && typeof cap.isNativePlatform === 'function') {
+    try {
+      return cap.isNativePlatform() === true
+    } catch {
+      return false
+    }
+  }
+  return false
 }
 
 function resolveBaseUrl() {
+  // Build-time override for static hosts that have no backend on the same
+  // origin (e.g. Cloudflare Pages -> Render). Set VITE_API_BASE to the full
+  // API root, e.g. https://vygo-backend.onrender.com/api/v1
+  const envBase = import.meta.env && import.meta.env.VITE_API_BASE
+  if (envBase) return String(envBase).replace(/\/+$/, '')
   if (isNativePlatform()) {
     return (localStorage.getItem(API_BASE_KEY) || '') + '/api/v1'
   }

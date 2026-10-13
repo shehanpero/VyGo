@@ -1,7 +1,14 @@
 # Render Blueprint - one-click deploy of the Spring Boot backend.
 # In the Render dashboard: New + -> Blueprint -> pick your GitHub repo.
-# Render reads this file and creates the web service. It will prompt you for
-# every env var marked `sync: false` (your secrets) during setup.
+# Render reads this file and creates the web service. It prompts you for every
+# env var marked `sync: false` (your secrets) during setup.
+#
+# This runs the `dev` profile on purpose: it uses a zero-install H2 database
+# and auto-seeds all demo data (routes, buses, users) on first boot, so you do
+# NOT need to provision MySQL to get a working demo. Note Render's free tier
+# has an ephemeral disk, so seeded data resets on redeploy (it survives normal
+# sleep/wake). For persistent data, switch to the `prod` profile + MySQL and
+# load database/schema.sql + database/seed.sql (see DEPLOY.md).
 services:
   - type: web
     name: vygo-backend
@@ -12,18 +19,9 @@ services:
     healthCheckPath: /api/v1/health
     envVars:
       - key: SPRING_PROFILES_ACTIVE
-        value: prod
+        value: dev
       # Secrets - Render asks you for these on first deploy (never stored in git)
       - key: VYGO_JWT_SECRET
         sync: false
       - key: VYGO_QR_SECRET
         sync: false
-      - key: VYGO_DB_URL
-        sync: false
-      - key: VYGO_DB_USER
-        sync: false
-      - key: VYGO_DB_PASS
-        sync: false
-      # Your live Netlify URL, e.g. https://vygo-demo.netlify.app
-      - key: VYGO_CORS_ORIGINS
-        value: https://REPLACE-WITH-YOUR-SITE.netlify.app

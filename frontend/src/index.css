@@ -266,7 +266,7 @@
   }
 
   .input {
-    @apply w-full rounded-[var(--radius-card)] px-4 py-3 text-sm transition-all duration-200;
+    @apply w-full min-w-0 rounded-[var(--radius-card)] px-4 py-3 text-sm transition-all duration-200;
     background: var(--bg-surface-2);
     border: 1px solid var(--border-strong);
     color: var(--text-base);
@@ -286,6 +286,57 @@
   .input-error {
     border-color: #ef4444;
     box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15);
+  }
+
+  /* Native date/time controls ignore width:100% on iOS Safari and render
+     over-sized. Reset the webkit appearance and normalise sizing/height so
+     they match the other .input fields on iPhone/iPad. */
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="month"],
+  input[type="week"],
+  input[type="time"] {
+    -webkit-appearance: none;
+    -moz-appearance: textfield;
+    appearance: none;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  input[type="date"]::-webkit-date-and-time-value,
+  input[type="datetime-local"]::-webkit-date-and-time-value,
+  input[type="month"]::-webkit-date-and-time-value,
+  input[type="week"]::-webkit-date-and-time-value,
+  input[type="time"]::-webkit-date-and-time-value {
+    text-align: left;
+    min-height: 1.5em;
+    margin: 0;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+  input[type="month"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator {
+    margin-left: 0;
+    padding: 0;
+  }
+
+  input[type="date"]::-webkit-datetime-edit,
+  input[type="datetime-local"]::-webkit-datetime-edit,
+  input[type="month"]::-webkit-datetime-edit,
+  input[type="time"]::-webkit-datetime-edit {
+    min-width: 0;
+  }
+
+  /* iOS Safari zooms the page when a focused field's font-size is < 16px,
+     making inputs look over-sized. Keep mobile fields at 16px. */
+  @media (max-width: 640px) {
+    .input {
+      font-size: 16px;
+    }
   }
 
   .label {
