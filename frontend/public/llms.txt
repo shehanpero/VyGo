@@ -1,0 +1,124 @@
+# VyGo
+
+> VyGo is a Sri Lankan online bus-booking and fleet-management platform. In this dev build the seeded catalogue has 146 routes across Sri Lanka, including expressway services on E001 (Southern Expressway) and E003 (Colombo–Katunayake Expressway), run by 16 licensed network operators (plus the demo operator Lanka Express). Passengers search trips, pick exact seats on a live bus map, lock seats for 10 minutes while paying by card via PayHere (sandbox mode in this demo), and board with a QR e-ticket. Bookings can be cancelled up to 60 minutes before departure with a 5% cancellation fee. The in-app VyGo Assistant answers questions and runs real trip searches through a public JSON API.
+> - 146 seeded routes (dev profile) — search, pick exact seats, pay, board with a QR e-ticket
+> - 10-minute seat lock while paying · cancellation 60 minutes before departure with 5% fee
+> - Expressway: E001 (Southern Expressway) and E003 (Colombo–Katunayake Expressway) have seed data; E002 has none
+> - Public assistant endpoint: POST /api/v1/assistant/chat
+
+VyGo is a demo/dev deployment of a full booking stack: a Spring Boot API (`backend`) and a React single-page app (`frontend`). Seed data is created only under the `dev` Spring profile by `DataInitializer`. Fares are computed from seeded fare rules (base + per-km, all seeded rules are base-only) and fall back to LKR 1000 when no rule exists. This file is the canonical fact sheet for AI agents — every fact below matches the seeded codebase.
+
+## route-catalogue
+
+- 146 routes are seeded in dev: 107 catalogue routes, 4 hand-built routes (Colombo–Kandy "01", Colombo–Galle "02", Colombo–Jaffna "30", Kandy–Galle "34"), and 35 new routes added for the expanded expressway and classic numbered corridors.
+- The expanded network adds E001 corridors (Colombo–Kandy, Makumbura–Kandy, Colombo–Galle, Colombo–Matara, Colombo–Tangalle, Colombo–Kataragama, Colombo–Middeniya/Walasmulla/Beliatta/Hakmana, Ampara–Makumbura, Siyambalanduwa–Makumbura, Badulla–Makumbura, Ella–Makumbura, Matale–Maharagama, Kurunegala–Maharagama), E003 routes (Colombo–Katunayake Airport, Colombo–Negombo), A9 corridors (Pettah–Jaffna, Pettah–Vavuniya, Kadawatha–Panadura), and classic SLTB routes 4, 15, 16, 17/57, 47, 48, 99/1–99/3, 122/1–122/4, 138/4.
+- Only route pairs with active schedules produce searchable trips. Key scheduled pairs: Colombo→Kandy (06:00 AC, 11:30 NORMAL, 14:30 LUXURY), Colombo→Galle (08:00 SEMI_LUXURY), Colombo→Katunayake Airport (E003), Colombo→Negombo (E003), Makumbura→Matara/Galle, Kadawatha→Galle, Panadura→Matara, Colombo→Matara/Tangalle/Kataragama, Ampara/Siyambalanduwa/Badulla/Ella→Makumbura, Matale/Kurunegala→Maharagama, Pettah→Jaffna/Vavuniya, plus classics 4/15/16/17-57/47/48/99-1/99-2/99-3/122-1/122-2/122-3/122-4/138-4.
+- [Browse all routes](/routes)
+
+## expressway-services
+
+- Expressway seed data covers E001 (Southern Expressway) and E003 (Colombo–Katunayake Expressway): 24 routes with `expresswayCode "E001"` and 2 routes with `expresswayCode "E003"` (Colombo–Katunayake Airport "EX 3-1", Colombo–Negombo "EX 3-2").
+- E001 corridors: Colombo→Kandy (EX 2-1), Makumbura→Kandy (EX 2-2), Colombo→Galle (EX 2-3), Colombo→Matara (EX 2-4), Colombo→Tangalle (EX 2-5), Colombo→Kataragama (EX 2-6), Colombo→Middeniya/Walasmulla/Beliatta/Hakmana (EX 2-7..EX 2-10), Ampara→Makumbura (EX 2-11), Siyambalanduwa→Makumbura (EX 2-12), Badulla→Makumbura (EX 2-13), Ella→Makumbura (EX 2-14), Matale→Maharagama (EX 2-15), Kurunegala→Maharagama (EX 2-16), plus the original Makumbura→Matara/Galle, Kaduwela→Matara/Galle, Kadawatha→Galle/Matara, Panadura→Matara, Galle→Kadawatha (EX 1-x / EX001).
+- E002 has no seed data; code comments that mention E02 describe services with no seed data.
+- 16 approved operators run the expressway corridors and classic routes (Expressway Bus, SLTB, SLTTS Katubadda, Singhegiri Transport, Jayalath Traders, SLTB Kataragama, Dilanka Express, GreenLeaf, Liyanage Express, SK Sons, Namali Travels, Namunukula Highway Express, NCG Express, Vishmitha Highway, Maleesha Tours, Jaffna Travels); the demo operator Lanka Express runs the hand-built 01 (Colombo–Kandy) and 02 (Colombo–Galle) services.
+- [Search trips](/)
+
+## fare-model
+
+- Fare = baseFare + (perKmRate × distanceKm) × surgeMultiplier; all seeded rules use perKm 0.00 and surge 1.0, so the seeded fare equals the base fare.
+- Colombo→Kandy (LKR): NORMAL 650, SEMI_LUXURY 900, LUXURY 1200, AC 1500.
+- Colombo→Galle (LKR): NORMAL 750, SEMI_LUXURY 1000, LUXURY 1300, AC 1600.
+- Colombo→Jaffna (LKR): SEMI_LUXURY 2400, AC 3400.
+- Expressway examples (LKR): Makumbura→Matara AC 1900 / LUXURY 1600; Makumbura→Galle AC 1600 / LUXURY 1350; Kadawatha→Galle AC 1650 / LUXURY 1400; Panadura→Matara AC 1750 / LUXURY 1450.
+- E003 examples (LKR): Colombo→Katunayake Airport LUXURY 900; Colombo→Negombo AC 950.
+- If no fare rule exists for a route+bus-type pair, search falls back to LKR 1000.
+- [Search fares](/)
+
+## cancellation-policy
+
+- Cancellation is allowed up to 60 minutes before departure (`app.cancellation-window-minutes: 60`).
+- A 5% cancellation fee applies (`app.cancellation-fee-pct: 5.0`); the remainder is refunded.
+- Within the window or after departure, bookings cannot be cancelled.
+- [Manage bookings](/bookings)
+
+## seat-lock
+
+- Passengers pick exact seat numbers on a live bus map.
+- Selected seats are locked for 10 minutes while paying (`app.seat-lock-ttl-minutes: 10`); expired locks are released automatically.
+- [Pick seats](/seat-select)
+
+## payment-sandbox
+
+- Card payments go through PayHere in sandbox mode in this demo; a booking confirms the moment the simulated gateway callback succeeds.
+- [Pay](/pay)
+
+## qr-e-ticket
+
+- After payment, a QR e-ticket is generated per seat and shown to the conductor at boarding; it can be pulled up any time from My Bookings.
+- [View bookings](/bookings)
+
+## assistant-endpoint
+
+- Endpoint: `POST /api/v1/assistant/chat` — public (no JWT required; a Bearer token is used when signed in).
+- Request body: `{ "message": "string (required, max 500)", "sessionId": "string (optional — enables ~10-minute follow-up memory)" }`.
+- Response body: `{ "reply": string, "suggestions": string[], "action": { "type": "none" | "search" | "navigate", "data": object }, "citations": [{ "label": string, "source": "trip-search" | "booking" | "fare-rule" | "route" | "faq-factsheet", "ref": string }] (optional, defaults to []) }`.
+- Example request:
+  ```json
+  { "message": "bus from Colombo to Kandy", "sessionId": "abc-123" }
+  ```
+- Example response (numbers from the seeded catalogue; `date` is always today's date):
+  ```json
+  {
+    "reply": "I found 3 trips on Colombo → Kandy today:\n• 06:00–09:30 · AC · Lanka Express · LKR 1500.00 · 45 seats\n• 11:30–15:00 · NORMAL · Lanka Express · LKR 650.00 · 58 seats\n• 14:30–18:00 · LUXURY · Lanka Express · LKR 1200.00 · 43 seats\nTap below to see all results and pick your seat.",
+    "suggestions": ["Show me", "Refund policy", "Payment methods"],
+    "action": { "type": "search", "data": { "from": "Colombo", "to": "Kandy", "date": "2026-08-02" } },
+    "citations": [
+      { "label": "Colombo→Kandy · 06:00 · AC · LKR 1500", "source": "trip-search", "ref": "101" },
+      { "label": "Fare rule 01+AC", "source": "fare-rule", "ref": "route1+AC" },
+      { "label": "Colombo→Kandy · 11:30 · NORMAL · LKR 650", "source": "trip-search", "ref": "102" },
+      { "label": "Fare rule 01+NORMAL", "source": "fare-rule", "ref": "route1+NORMAL" },
+      { "label": "Colombo→Kandy · 14:30 · LUXURY · LKR 1200", "source": "trip-search", "ref": "103" },
+      { "label": "Fare rule 01+LUXURY", "source": "fare-rule", "ref": "route1+LUXURY" }
+    ]
+  }
+  ```
+- Every data-backed reply carries `citations` grounding each claim to a real trip, booking, fare rule, route, or an `llms.txt` fact section; greetings and help carry `citations: []`.
+
+## demo-accounts
+
+- All seeded passwords are `password123`.
+- `admin@vygo.lk` — System Administrator (ADMIN), mobile 0700000001.
+- `operator@vygo.lk` — Lanka Express Owner (OPERATOR), mobile 0700000002, operator "Lanka Express" (PV-1001).
+- `conductor@vygo.lk` — Conductor Saman (CONDUCTOR), mobile 0700000003.
+- `nimal@vygo.lk` — Nimal Perera (PASSENGER), mobile 0712345678; owns one seeded CONFIRMED booking `DEMO-VY-<date>-<hex>` on today's 14:30 Colombo→Kandy LUXURY trip (seats 1–2, total LKR 2400, paid via PayHere sandbox card).
+- `pending@vygo.lk` — Ceylon Travels Owner (OPERATOR, PENDING approval), mobile 0700000004.
+- [Sign in](/login)
+
+## api-endpoints
+
+The public JSON API is the real AI surface of VyGo. Endpoints below require no JWT; they are reachable from any agent or crawler.
+
+- `GET /api/v1/health` — service liveness. Returns `{ "status": "UP", ... }`.
+- `GET /api/v1/buses/search?from=&to=&date=` — search trips for today (or a given date). Returns trips with id, departure/arrival, bus type, fare, available seat count.
+- `GET /api/v1/trips/{tripId}/seats` — live seat map for a trip. Each seat: `seatNumber`, `status` (`AVAILABLE`/`LOCKED`/`BOOKED`), `price`. The seat-selection UI renders this map.
+- `GET /api/v1/routes` — the route catalogue (name, code, terminals, distance, duration).
+- `GET /api/v1/route-tools` — route directory (code, name, terminals).
+- `GET /api/v1/route-tools/{id}` — a single route's details.
+- `GET /api/v1/route-tools/{id}/timetable` — schedule entries for a route (day, bus type, departure).
+- `GET /api/v1/operators/public` — approved operators (id, name, services).
+- `GET /api/v1/reviews/operator/{operatorId}` — public operator ratings/reviews.
+- `POST /api/v1/assistant/chat` — the in-app assistant (documented above).
+- `GET /api/v1/tickets/{ref}/qr` — QR e-ticket image for a booking reference (public; the ref is a payment-confirmed secret).
+
+Authenticated endpoints (Bearer JWT): `/api/v1/auth/**`, `/api/v1/bookings/**`, `/api/v1/payments/**`, `/api/v1/notifications/**`, `/api/v1/tickets/**` (validate), `/api/v1/operator/**`, `/api/v1/conductor/**`, `/api/v1/admin/**`, `/api/v1/analytics/**`. They are NOT part of the public AI surface.
+
+## app-routes
+
+- [/](/): trip search
+- [/routes](/routes): route list
+- [/login](/login) · [/register](/register): authentication
+- [/bookings](/bookings): passenger bookings and e-tickets
+- [/notifications](/notifications): trip alerts
+- [/operator](/operator): operator dashboard (buses, schedules, reports)
+- [/admin](/admin): admin dashboard (operators, complaints)
+- [/conductor](/conductor): conductor panel (onboard booking, QR validation)

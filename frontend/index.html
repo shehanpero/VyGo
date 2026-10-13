@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content"
+    />
+    <meta name="theme-color" content="#020617" id="theme-color-meta" />
+    <link rel="icon" type="image/png" href="/vygoicon.png" />
+    <title>VyGo — Sri Lanka Bus Booking</title>
+    <script>
+      // No-flash theme bootstrap: applied before React paints.
+      (function () {
+        try {
+          var theme = localStorage.getItem('vygo-theme') || 'system';
+          var motion = localStorage.getItem('vygo-motion') || 'system';
+          var dark = theme === 'light'
+            ? false
+            : theme === 'dark'
+              ? true
+              : !window.matchMedia || window.matchMedia('(prefers-color-scheme: dark)').matches;
+          document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+          var reduced = motion === 'reduced' ||
+            (motion === 'system' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+          if (reduced) document.documentElement.classList.add('reduce-motion');
+          document.getElementById('theme-color-meta').setAttribute('content', dark ? '#020617' : '#eef2f7');
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body class="bg-slate-950 text-slate-100 antialiased">
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

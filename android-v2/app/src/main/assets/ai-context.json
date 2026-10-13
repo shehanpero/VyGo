@@ -1,0 +1,140 @@
+{
+  "serviceName": "VyGo",
+  "serviceUrl": "https://vygo.example.com",
+  "description": "VyGo is a Sri Lankan online bus-booking and fleet-management platform (demo/dev build). Passengers search trips between Sri Lankan cities, pick exact seats on a live bus map, lock seats for 10 minutes while paying by card via PayHere (sandbox in this demo), and board with a QR e-ticket. Cancellation is allowed up to 60 minutes before departure with a 5% fee. Seed data is created only under the dev Spring profile. Canonical fact sheet: /llms.txt.",
+  "version": "1.0",
+  "endpoints": [
+    {
+      "name": "assistant_chat",
+      "method": "POST",
+      "path": "/api/v1/assistant/chat",
+      "auth": "public (no JWT required; an optional Bearer token personalizes booking lookups)",
+      "requestSchema": {
+        "type": "object",
+        "required": ["message"],
+        "properties": {
+          "message": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Free-text message to the VyGo Assistant"
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Optional; tolerated by the default Jackson configuration but not yet declared on AssistantChatRequest (currently ignored)"
+          }
+        }
+      },
+      "responseSchema": {
+        "type": "object",
+        "required": ["reply", "suggestions", "action"],
+        "properties": {
+          "reply": {
+            "type": "string",
+            "description": "Assistant answer text"
+          },
+          "suggestions": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Suggested follow-up taps"
+          },
+          "action": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": ["none", "search", "navigate"],
+                "description": "none = no action; search = run trip search with data.from/data.to/data.date; navigate = go to data.path"
+              },
+              "data": {
+                "type": "object",
+                "description": "Action payload: for search {from, to, date}; for navigate {path}"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "keyIntents": [
+    {
+      "name": "search_trips",
+      "description": "Find available trips between two Sri Lankan cities for the current date",
+      "triggerPhrases": ["bus from Colombo to Kandy", "Colombo to Galle", "Galle to Jaffna", "find a bus", "available trips", "trip from", "travel from"]
+    },
+    {
+      "name": "my_bookings",
+      "description": "List the signed-in passenger's bookings (guest is redirected to login)",
+      "triggerPhrases": ["my bookings", "show my bookings", "my trips", "booking status", "check my booking", "where is my booking"]
+    },
+    {
+      "name": "refund_policy",
+      "description": "Explain the cancellation and refund rules: 60 minutes before departure, 5% fee",
+      "triggerPhrases": ["cancel", "cancellation", "refund", "cancel my booking", "refund policy"]
+    },
+    {
+      "name": "fare_lookup",
+      "description": "Show fares from seeded fare rules for a route and bus type",
+      "triggerPhrases": ["how much is the fare", "fare to", "price", "ticket price", "cheapest", "cost of a ticket"]
+    },
+    {
+      "name": "routes",
+      "description": "Describe the route catalogue (146 seeded routes) and navigate to the Routes page",
+      "triggerPhrases": ["routes", "route list", "where can i go", "destinations", "available routes"]
+    },
+    {
+      "name": "expressway",
+      "description": "Answer about expressway services; E001 (Southern Expressway) and E003 (Colombo-Katunayake Expressway) have seed data; E002 has none",
+      "triggerPhrases": ["expressway", "e001", "e003", "e1", "e3", "highway", "southern expressway", "colombo-katunayake expressway"]
+    },
+    {
+      "name": "login",
+      "description": "Explain login and registration, including demo accounts",
+      "triggerPhrases": ["login", "log in", "sign in", "register", "sign up", "create account", "otp"]
+    },
+    {
+      "name": "operator",
+      "description": "Explain operator onboarding: register, get approved, manage buses, routes, schedules and reports",
+      "triggerPhrases": ["operator", "fleet", "own a bus", "register a bus", "sell tickets on vygo"]
+    },
+    {
+      "name": "conductor",
+      "description": "Explain the conductor panel: onboard booking, QR ticket validation, reconciliation",
+      "triggerPhrases": ["conductor", "onboard", "on-board", "validate ticket"]
+    },
+    {
+      "name": "alerts",
+      "description": "Explain delay alerts and reminders managed from the Notifications page",
+      "triggerPhrases": ["delay", "notification", "alert", "reminder", "get notified"]
+    }
+  ],
+  "facts": [
+    { "key": "route-catalogue", "value": "146 routes seeded in dev (107 catalogue + 4 hand-built 01/02/30/34: Colombo-Kandy, Colombo-Galle, Colombo-Jaffna, Kandy-Galle + 35 new expressway/classic routes)", "ref": "/llms.txt#route-catalogue" },
+    { "key": "expressway-codes", "value": "E001 (Southern Expressway) and E003 (Colombo-Katunayake Expressway) seeded: 24 E001 routes and 2 E003 routes (Colombo-Katunayake Airport, Colombo-Negombo); E002 has no seed data", "ref": "/llms.txt#expressway-services" },
+    { "key": "operators", "value": "16 approved network operators: Expressway Bus, SLTB, SLTTS Katubadda, Singhegiri Transport, Jayalath Traders, SLTB Kataragama, Dilanka Express, GreenLeaf, Liyanage Express, SK Sons, Namali Travels, Namunukula Highway Express, NCG Express, Vishmitha Highway, Maleesha Tours, Jaffna Travels (plus demo operator Lanka Express)", "ref": "/llms.txt#expressway-services" },
+    { "key": "cancellation-window-minutes", "value": 60, "ref": "/llms.txt#cancellation-policy" },
+    { "key": "cancellation-fee-pct", "value": 5.0, "ref": "/llms.txt#cancellation-policy" },
+    { "key": "seat-lock-minutes", "value": 10, "ref": "/llms.txt#seat-lock" },
+    { "key": "fallback-fare-lkr", "value": 1000, "ref": "/llms.txt#fare-model" },
+    { "key": "payment-gateway", "value": "PayHere in sandbox mode (demo)", "ref": "/llms.txt#payment-sandbox" },
+    { "key": "ticketing", "value": "QR e-ticket per seat, shown to conductor at boarding", "ref": "/llms.txt#qr-e-ticket" },
+    { "key": "demo-accounts", "value": ["admin@vygo.lk", "operator@vygo.lk", "conductor@vygo.lk", "nimal@vygo.lk", "pending@vygo.lk"], "note": "all passwords password123; pending@vygo.lk is PENDING approval", "ref": "/llms.txt#demo-accounts" },
+    { "key": "demo-booking", "value": "nimal@vygo.lk owns one CONFIRMED booking DEMO-VY-<date>-<hex> on today's 14:30 Colombo->Kandy LUXURY trip, seats 1-2, total LKR 2400, paid via PayHere sandbox", "ref": "/llms.txt#demo-accounts" },
+    { "key": "colombo-kandy-fares", "value": { "NORMAL": 650, "SEMI_LUXURY": 900, "LUXURY": 1200, "AC": 1500 }, "ref": "/llms.txt#fare-model" },
+    { "key": "colombo-kandy-schedule", "value": ["06:00 AC", "11:30 NORMAL", "14:30 LUXURY"], "ref": "/llms.txt#route-catalogue" },
+    { "key": "data-scope", "value": "Seed data exists only under the dev Spring profile (DataInitializer @Profile(\"dev\"))", "ref": "/llms.txt" }
+  ],
+  "sources": [
+    { "path": "backend/src/main/java/com/vygo/config/DataInitializer.java", "description": "Seed data: routes, schedules, fare rules, demo accounts, the single seeded passenger booking" },
+    { "path": "backend/src/main/java/com/vygo/service/TripService.java", "description": "Trip search, seat materialization, available-seat counting, LKR 1000 fallback fare" },
+    { "path": "backend/src/main/java/com/vygo/service/FareCalculator.java", "description": "Fare formula: (baseFare + perKmRate x distanceKm) x surgeMultiplier" },
+    { "path": "backend/src/main/java/com/vygo/service/BookingService.java", "description": "Booking lifecycle and cancellation (window + fee from AppProperties)" },
+    { "path": "backend/src/main/java/com/vygo/service/SeatLockService.java", "description": "Seat locking with 10-minute TTL from AppProperties" },
+    { "path": "backend/src/main/java/com/vygo/config/AppProperties.java", "description": "Config properties: seatLockTtlMinutes, cancellationWindowMinutes, cancellationFeePct" },
+    { "path": "backend/src/main/resources/application.yml", "description": "Actual values: seat-lock-ttl-minutes 10, cancellation-window-minutes 60, cancellation-fee-pct 5.0" },
+    { "path": "backend/src/main/java/com/vygo/service/AssistantService.java", "description": "Assistant intent engine: search, bookings, routes, cancel, FAQ, LLM upgrade" },
+    { "path": "backend/src/main/java/com/vygo/controller/AssistantController.java", "description": "Public POST /api/v1/assistant/chat controller" },
+    { "path": "backend/src/main/java/com/vygo/dto/assistant/AssistantResponse.java", "description": "Response record: reply, suggestions, action (citations field is the proposed addition)" },
+    { "path": "backend/src/main/java/com/vygo/dto/assistant/AssistantChatRequest.java", "description": "Request record: message (@NotBlank, max 500); sessionId not yet declared" },
+    { "path": "docs/API_CONTRACT.md", "description": "REST API contract reference (repo-only, not served by Vite)" }
+  ]
+}

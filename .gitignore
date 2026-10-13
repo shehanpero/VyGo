@@ -1,0 +1,66 @@
+# ---------------- Java / Maven ----------------
+backend/target/
+*.class
+target/
+
+# ---------------- Node / Vite ----------------
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/dist-single/
+**/dist/
+**/dist-single/
+**/.vite/
+*.tsbuildinfo
+
+# ---------------- Android / Gradle build outputs ----------------
+# NOTE: the top-level build/ dir (build/3d/build_models.py) is SOURCE and is
+# intentionally kept. Only generated Gradle "build" folders and APKs are ignored.
+android-v2/**/build/
+android-v2/.gradle/
+android-v2/local.properties
+frontend/android/**/build/
+frontend/android/.gradle/
+frontend/android/local.properties
+mobile/**/build/
+**/app/build/
+**/*.apk
+**/*.aab
+**/*.dex
+**/mapping.txt
+
+# ---------------- Separate nested project (has its own .git) ----------------
+# expo-app is its own Git repository (Expo dev shell, ~250 MB). Commit/push it
+# separately if you want it on GitHub; it is not part of the website deploy.
+expo-app/
+
+# ---------------- IDE / tooling ----------------
+.idea/
+.vscode/
+.cursor/
+.opencode/
+*.iml
+.DS_Store
+
+# ---------------- Logs ----------------
+*.log
+logs/
+
+# ---------------- Env & secrets ----------------
+.env
+.env.local
+.env.*.local
+application-local.yml
+*-local.properties
+
+# ---------------- Runtime data (never commit user/DB data) ----------------
+backend/data/
+backend/uploads/
+uploads/
+uploads-test/
+
+# ---------------- 3D build artifacts ----------------
+# Blender generator output; source of truth is build/3d/build_models.py
+build/3d/output/
+*.blend
+*.blend1

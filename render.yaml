@@ -1,0 +1,29 @@
+# Render Blueprint - one-click deploy of the Spring Boot backend.
+# In the Render dashboard: New + -> Blueprint -> pick your GitHub repo.
+# Render reads this file and creates the web service. It will prompt you for
+# every env var marked `sync: false` (your secrets) during setup.
+services:
+  - type: web
+    name: vygo-backend
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      # Secrets - Render asks you for these on first deploy (never stored in git)
+      - key: VYGO_JWT_SECRET
+        sync: false
+      - key: VYGO_QR_SECRET
+        sync: false
+      - key: VYGO_DB_URL
+        sync: false
+      - key: VYGO_DB_USER
+        sync: false
+      - key: VYGO_DB_PASS
+        sync: false
+      # Your live Netlify URL, e.g. https://vygo-demo.netlify.app
+      - key: VYGO_CORS_ORIGINS
+        value: https://REPLACE-WITH-YOUR-SITE.netlify.app

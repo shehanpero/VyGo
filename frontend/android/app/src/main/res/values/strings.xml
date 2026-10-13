@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">VyGo</string>
+    <string name="title_activity_main">VyGo</string>
+    <string name="package_name">com.vygo.app</string>
+    <string name="custom_url_scheme">com.vygo.app</string>
+</resources>

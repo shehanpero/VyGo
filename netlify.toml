@@ -1,0 +1,32 @@
+# Netlify deploy config for the VyGo frontend (React + Vite).
+# The app calls the API at a RELATIVE path (/api/v1 - see frontend/src/api/client.js),
+# so Netlify proxies those calls to the Spring Boot backend. Update the two
+# `to =` URLs below after you deploy the backend on Render/Railway.
+
+[build]
+  base = "frontend"
+  command = "npm install && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# ---- API proxy: /api/*  ->  Spring Boot backend ----
+[[redirects]]
+  from = "/api/*"
+  to = "https://REPLACE-WITH-YOUR-BACKEND.onrender.com/api/:splat"
+  status = 200
+  force = true
+
+# ---- Uploaded images proxy: /uploads/*  ->  backend ----
+[[redirects]]
+  from = "/uploads/*"
+  to = "https://REPLACE-WITH-YOUR-BACKEND.onrender.com/uploads/:splat"
+  status = 200
+  force = true
+
+# ---- SPA fallback: every other route serves index.html (React Router) ----
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

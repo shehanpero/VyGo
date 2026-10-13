@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VyGo</string>
+    <string name="server_setup_title">Connect to your VyGo server</string>
+    <string name="server_setup_subtitle">Enter the address of the VyGo backend running on your network.</string>
+    <string name="server_url_label">Server address</string>
+    <string name="server_url_hint">http://192.168.1.10:8080</string>
+    <string name="action_test">Test connection</string>
+    <string name="action_continue">Continue</string>
+    <string name="action_change_server">Change server</string>
+    <string name="action_retry">Retry</string>
+    <string name="testing">Testing…</string>
+    <string name="test_success">Connected successfully</string>
+    <string name="test_failure">Could not reach the server</string>
+    <string name="web_error_title">Something went wrong</string>
+</resources>

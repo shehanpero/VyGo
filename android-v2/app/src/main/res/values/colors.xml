@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="vygo_bg">#020617</color>
+    <color name="vygo_surface">#0F172A</color>
+    <color name="vygo_surface_variant">#1E293B</color>
+    <color name="vygo_accent">#22D3EE</color>
+    <color name="vygo_on_bg">#F8FAFC</color>
+</resources>

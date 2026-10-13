@@ -1,0 +1,98 @@
+server:
+  # PORT is injected by hosts like Render/Railway; falls back to 8080 locally.
+  port: ${PORT:8080}
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: vygo-backend
+  profiles:
+    active: dev
+  jackson:
+    default-property-inclusion: non_null
+    serialization:
+      write-dates-as-timestamps: false
+
+app:
+  secret: ${VYGO_JWT_SECRET:change-me-in-prod-this-is-a-very-long-secret-key-0123456789abcdef}
+  access-token-ttl-minutes: 120
+  refresh-token-ttl-days: 14
+  seat-lock-ttl-minutes: 10
+  cancellation-window-minutes: 60
+  cancellation-fee-pct: 5.0
+  qr-secret: ${VYGO_QR_SECRET:vygo-qr-signing-secret-0123456789}
+  cors-allowed-origins: ${VYGO_CORS_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,https://localhost,capacitor://localhost,http://localhost,null}
+  notifications:
+    email-from: noreply@vygo.lk
+    sms-enabled: false
+    email-enabled: false
+  ai:
+    llm:
+      base-url: ${VYGO_LLM_BASE_URL:}
+      api-key: ${VYGO_LLM_API_KEY:}
+      model: ${VYGO_LLM_MODEL:gpt-4o-mini}
+    perovin-url: ${VYGO_PEROVIN_URL:http://localhost:3000}
+  download:
+    apk-path: ${VYGO_APK_PATH:../android-v2/app/build/outputs/apk/release/app-release.apk}
+    version: ${VYGO_APK_VERSION:2.0.2}
+
+---
+# ---------- dev profile: H2 file database (zero-install, persistent) ----------
+# File-based H2 stores the database on disk at backend/data/vygo.mv.db so data
+# survives across restarts, unlike the previous in-memory (jdbc:h2:mem:...) URL.
+# AUTO_SERVER lets a second process (e.g. an IDE's H2 console) attach while the
+# app holds the file lock. Path is relative to the JVM working directory.
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:h2:file:./data/vygo;MODE=MySQL;DATABASE_TO_LOWER=TRUE;AUTO_SERVER=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc:
+          time_zone: Asia/Colombo
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  mail:
+    host: localhost
+    port: 1025
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+---
+# ---------- prod profile: MySQL 8 (via env vars) ----------
+spring:
+  config:
+    activate:
+      on-profile: prod
+  datasource:
+    url: ${VYGO_DB_URL:jdbc:mysql://localhost:3306/vygo?useSSL=false&serverTimezone=Asia/Colombo&createDatabaseIfNotExist=true}
+    username: ${VYGO_DB_USER:vygo}
+    password: ${VYGO_DB_PASS:vygo}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics

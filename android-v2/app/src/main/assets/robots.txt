@@ -1,0 +1,45 @@
+# VyGo robots.txt — all content is public; every section below allows crawlers full access.
+# AI/LLM crawlers are explicitly welcomed so VyGo content is discoverable by answer engines.
+
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-Web
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: CCBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Bytespider
+Allow: /
+
+# Default: everything else is allowed too; nothing is disallowed.
+User-agent: *
+Allow: /
+
+# Machine-readable site context for LLM agents and AI crawlers.
+# https://vygo.example.com/llms.txt
