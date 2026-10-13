@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { api, errorMessage } from '../api/client'
+import { api } from '../api/client'
 import { useAuth } from '../context/AuthContext'
 
 const ROLE_TABS = [
@@ -9,6 +9,29 @@ const ROLE_TABS = [
   { code: 'DRIVER', label: "I'm a Driver" },
   { code: 'CONDUCTOR', label: "I'm a Conductor" },
 ]
+
+// Accept common Sri Lankan mobile formats and normalise to the 07XXXXXXXX form
+// the backend requires (^0[0-9]{9}$): strips spaces/dashes, converts +94/94
+// prefixes and adds a missing leading 0.
+function normaliseMobile(input) {
+  let v = String(input || '').replace(/\D/g, '')
+  if (v.startsWith('94') && v.length >= 11) v = '0' + v.slice(2)
+  if (v.length === 9 && v.startsWith('7')) v = '0' + v
+  return v
+}
+
+// Turn backend validation/conflict errors into something a person can act on.
+function friendlyError(err) {
+  const status = err?.response?.status
+  const raw = err?.response?.data?.error || err?.message || ''
+  if (status === 409) return raw || 'That email or mobile number is already registered.'
+  if (/must match/.test(raw) || /mobile/i.test(raw) && status === 400) {
+    return 'Enter a valid Sri Lankan mobile number, e.g. 0712345678.'
+  }
+  if (/password/i.test(raw) && status === 400) return 'Password must be at least 8 characters.'
+  if (/email/i.test(raw) && status === 400) return 'Enter a valid email address.'
+  return raw || 'Registration failed. Please check your details and try again.'
+}
 
 export default function Register() {
   const { login } = useAuth()
@@ -52,7 +75,14 @@ export default function Register() {
     setLoading(true)
     setError('')
     try {
-      const payload = { fullName: form.fullName, email: form.email, mobile: form.mobile, password: form.password, role }
+      const mobile = normaliseMobile(form.mobile)
+      if (!/^0[0-9]{9}$/.test(mobile)) {
+        throw new Error('Enter a valid Sri Lankan mobile number, e.g. 0712345678')
+      }
+      if (form.password.length < 8) {
+        throw new Error('Password must be at least 8 characters')
+      }
+      const payload = { fullName: form.fullName, email: form.email, mobile, password: form.password, role }
       if (role === 'OPERATOR') payload.operator = form.operator
       if (isStaff) {
         if (!form.ownerId) throw new Error('Select the bus owner / association you belong to')
@@ -62,7 +92,7 @@ export default function Register() {
       await login(form.email, form.password)
       navigate(role === 'OPERATOR' ? '/operator' : isStaff ? '/verify' : '/', { replace: true })
     } catch (err) {
-      setError(errorMessage(err, err?.message || 'Registration failed'))
+      setError(friendlyError(err))
     } finally {
       setLoading(false)
     }
