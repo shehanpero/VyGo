@@ -50,6 +50,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.vygo.app.R
+import com.vygo.app.data.ServerPreferences
 import com.vygo.app.data.ServerTester
 import com.vygo.app.normalizeBaseUrl
 import com.vygo.app.ui.theme.VyGoError
@@ -95,6 +96,12 @@ fun ServerSetupScreen(
         }
     }
 
+    val onUseHosted: () -> Unit = {
+        url = ServerPreferences.DEFAULT_SERVER_URL
+        status = null
+        onTest()
+    }
+
     val expanded = windowSizeClass.widthSizeClass != WindowWidthSizeClass.Compact
 
     Box(
@@ -120,6 +127,7 @@ fun ServerSetupScreen(
                     testing = testing,
                     status = status,
                     onTest = onTest,
+                    onUseHosted = onUseHosted,
                     onContinue = { normalizeBaseUrl(url)?.let(onConnected) },
                 )
             }
@@ -140,6 +148,7 @@ fun ServerSetupScreen(
                     testing = testing,
                     status = status,
                     onTest = onTest,
+                    onUseHosted = onUseHosted,
                     onContinue = { normalizeBaseUrl(url)?.let(onConnected) },
                 )
             }
@@ -209,6 +218,7 @@ private fun SetupCard(
     testing: Boolean,
     status: TestStatus?,
     onTest: () -> Unit,
+    onUseHosted: () -> Unit,
     onContinue: () -> Unit,
 ) {
     val connected = status == TestStatus.Ok
@@ -269,6 +279,14 @@ private fun SetupCard(
                 ) {
                     Text(stringResource(R.string.action_continue))
                 }
+            }
+            Spacer(Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = onUseHosted,
+                enabled = !testing,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(stringResource(R.string.action_use_hosted))
             }
             status?.let { TestStatusRow(it) }
         }

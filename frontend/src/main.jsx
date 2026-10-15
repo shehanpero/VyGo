@@ -57,6 +57,7 @@ const OperatorStaff = lazy(() => import('./pages/OperatorStaff'))
 const AdminDashboard = lazy(() => import('./pages/AdminDashboard'))
 const AdminOperators = lazy(() => import('./pages/AdminOperators'))
 const AdminVerifications = lazy(() => import('./pages/AdminVerifications'))
+const AdminBuses = lazy(() => import('./pages/AdminBuses'))
 const IdentityVerification = lazy(() => import('./pages/IdentityVerification'))
 const AdminComplaints = lazy(() => import('./pages/AdminComplaints'))
 const AdminBookings = lazy(() => import('./pages/AdminBookings'))
@@ -254,6 +255,14 @@ function App() {
                             </ProtectedRoute>
                           }
                         />
+                        <Route
+                          path="/admin/buses"
+                          element={
+                            <ProtectedRoute roles={ADMIN}>
+                              <AdminBuses />
+                            </ProtectedRoute>
+                          }
+                        />
 
                         <Route
                           path="/scan"
@@ -285,7 +294,7 @@ function App() {
                         <Route
                           path="/verify"
                           element={
-                            <ProtectedRoute roles={[...DRIVER, ...CONDUCTOR]}>
+                            <ProtectedRoute roles={[...DRIVER, ...CONDUCTOR, ...OPERATOR]}>
                               <IdentityVerification />
                             </ProtectedRoute>
                           }

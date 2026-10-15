@@ -13,6 +13,23 @@ spring:
     default-property-inclusion: non_null
     serialization:
       write-dates-as-timestamps: false
+  # Real email delivery (SMTP). Defaults point at a local dev/null mail server;
+  # for real sending set VYGO_MAIL_HOST/USERNAME/PASSWORD (e.g. Gmail app password)
+  # and VYGO_EMAIL_ENABLED=true.
+  mail:
+    host: ${VYGO_MAIL_HOST:localhost}
+    port: ${VYGO_MAIL_PORT:1025}
+    username: ${VYGO_MAIL_USERNAME:}
+    password: ${VYGO_MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${VYGO_MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${VYGO_MAIL_STARTTLS:true}
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
 
 app:
   secret: ${VYGO_JWT_SECRET:change-me-in-prod-this-is-a-very-long-secret-key-0123456789abcdef}
@@ -24,9 +41,21 @@ app:
   qr-secret: ${VYGO_QR_SECRET:vygo-qr-signing-secret-0123456789}
   cors-allowed-origins: ${VYGO_CORS_ORIGINS:http://localhost:5173,http://127.0.0.1:5173,https://localhost,capacitor://localhost,http://localhost,null}
   notifications:
-    email-from: noreply@vygo.lk
-    sms-enabled: false
-    email-enabled: false
+    email-from: ${VYGO_EMAIL_FROM:noreply@vygo.lk}
+    sms-enabled: ${VYGO_SMS_ENABLED:false}
+    email-enabled: ${VYGO_EMAIL_ENABLED:false}
+    # SMS gateway: blank | textlk | notifylk (free-trial accounts available).
+    sms-provider: ${VYGO_SMS_PROVIDER:}
+    sms-api-key: ${VYGO_SMS_API_KEY:}
+    sms-sender-id: ${VYGO_SMS_SENDER_ID:}
+    sms-user-id: ${VYGO_SMS_USER_ID:}
+  # Self-hosted face verification (see face-service/). Disabled by default so the
+  # rest of the app keeps working if the Python service is not running.
+  face:
+    enabled: ${VYGO_FACE_ENABLED:false}
+    url: ${VYGO_FACE_URL:http://localhost:8100}
+    match-threshold: ${VYGO_FACE_MATCH_THRESHOLD:0.40}
+    require-liveness: ${VYGO_FACE_REQUIRE_LIVENESS:true}
   ai:
     llm:
       base-url: ${VYGO_LLM_BASE_URL:}
@@ -35,7 +64,7 @@ app:
     perovin-url: ${VYGO_PEROVIN_URL:http://localhost:3000}
   download:
     apk-path: ${VYGO_APK_PATH:../android-v2/app/build/outputs/apk/release/app-release.apk}
-    version: ${VYGO_APK_VERSION:2.0.2}
+    version: ${VYGO_APK_VERSION:2.0.3}
 
 ---
 # ---------- dev profile: H2 file database (zero-install, persistent) ----------
@@ -65,9 +94,6 @@ spring:
     console:
       enabled: true
       path: /h2-console
-  mail:
-    host: localhost
-    port: 1025
 
 management:
   endpoints:

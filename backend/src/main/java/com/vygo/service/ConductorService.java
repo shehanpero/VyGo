@@ -17,6 +17,7 @@ import com.vygo.entity.BoardingPoint;
 import com.vygo.entity.Booking;
 import com.vygo.entity.BookingSeat;
 import com.vygo.entity.Bus;
+import com.vygo.entity.BusOperator;
 import com.vygo.entity.FareRule;
 import com.vygo.entity.Notification;
 import com.vygo.entity.Payment;
@@ -29,12 +30,14 @@ import com.vygo.entity.Trip;
 import com.vygo.entity.User;
 import com.vygo.exception.BadRequestException;
 import com.vygo.exception.ConflictException;
+import com.vygo.exception.ForbiddenException;
 import com.vygo.exception.NotFoundException;
 import com.vygo.integration.SmsSender;
 import com.vygo.repository.AuditLogRepository;
 import com.vygo.repository.BoardingPointRepository;
 import com.vygo.repository.BookingRepository;
 import com.vygo.repository.BookingSeatRepository;
+import com.vygo.repository.BusStaffRepository;
 import com.vygo.repository.FareRuleRepository;
 import com.vygo.repository.NotificationRepository;
 import com.vygo.repository.PaymentRepository;
@@ -89,6 +92,8 @@ public class ConductorService {
     private final SeatInventoryRepository seatRepo;
     private final BookingRepository bookingRepo;
     private final BookingSeatRepository bookingSeatRepo;
+    private final BusStaffRepository busStaffRepo;
+    private final TripService tripService;
     private final UserRepository userRepo;
     private final RoleRepository roleRepo;
     private final PaymentRepository paymentRepo;
@@ -105,6 +110,7 @@ public class ConductorService {
 
     public ConductorService(TripRepository tripRepo, SeatInventoryRepository seatRepo,
                             BookingRepository bookingRepo, BookingSeatRepository bookingSeatRepo,
+                            BusStaffRepository busStaffRepo, TripService tripService,
                             UserRepository userRepo, RoleRepository roleRepo,
                             PaymentRepository paymentRepo, TicketRepository ticketRepo,
                             BoardingPointRepository boardingPointRepo, FareRuleRepository fareRuleRepo,
@@ -115,6 +121,8 @@ public class ConductorService {
         this.seatRepo = seatRepo;
         this.bookingRepo = bookingRepo;
         this.bookingSeatRepo = bookingSeatRepo;
+        this.busStaffRepo = busStaffRepo;
+        this.tripService = tripService;
         this.userRepo = userRepo;
         this.roleRepo = roleRepo;
         this.paymentRepo = paymentRepo;
@@ -130,17 +138,62 @@ public class ConductorService {
         this.app = app;
     }
 
-    @Transactional(readOnly = true)
-    public List<TripListRowResponse> tripsForDate(LocalDate date) {
-        return tripRepo.findByTripDate(date).stream()
+    @Transactional
+    public List<TripListRowResponse> tripsForDate(Long userId, LocalDate date) {
+        User user = userRepo.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
+        List<Trip> trips;
+        if (user.getOwner() != null) {
+            // Scoped to the bus owner / association this conductor belongs to, so
+            // the list only contains that operator's buses (including newly added ones).
+            trips = tripService.tripsForOperatorOnDate(user.getOwner().getId(), date);
+        } else {
+            trips = tripsForAssignedBuses(userId, date);
+        }
+        return trips.stream()
                 .map(this::toTripRow)
                 .sorted(Comparator.comparing(TripListRowResponse::departureTime))
                 .toList();
     }
 
-    @Transactional
-    public SeatMapResponse tripSeats(Long tripId) {
+    private List<Trip> tripsForAssignedBuses(Long userId, LocalDate date) {
+        Set<Long> busIds = busStaffRepo.findByUserId(userId).stream()
+                .map(s -> s.getBus().getId())
+                .collect(Collectors.toSet());
+        if (busIds.isEmpty()) {
+            return List.of();
+        }
+        return tripRepo.findByTripDate(date).stream()
+                .filter(t -> busIds.contains(t.getSchedule().getBus().getId()))
+                .toList();
+    }
+
+    /**
+     * A conductor may only act on trips that belong to their bus owner / association
+     * (or, if unaffiliated, a bus they are assigned to). Prevents cross-operator access.
+     */
+    private Trip requireAccessibleTrip(Long userId, Long tripId) {
         Trip trip = tripRepo.findById(tripId).orElseThrow(() -> new NotFoundException("Trip not found"));
+        User user = userRepo.findById(userId).orElseThrow(() -> new NotFoundException("User not found"));
+        BusOperator op = trip.getSchedule().getOperator() != null
+                ? trip.getSchedule().getOperator()
+                : trip.getSchedule().getBus().getOperator();
+        if (user.getOwner() != null && op != null) {
+            if (!op.getId().equals(user.getOwner().getId())) {
+                throw new ForbiddenException("This trip belongs to another bus owner");
+            }
+            return trip;
+        }
+        boolean assigned = busStaffRepo.findByUserId(userId).stream()
+                .anyMatch(s -> s.getBus().getId().equals(trip.getSchedule().getBus().getId()));
+        if (!assigned) {
+            throw new ForbiddenException("This trip is not assigned to you");
+        }
+        return trip;
+    }
+
+    @Transactional
+    public SeatMapResponse tripSeats(Long userId, Long tripId) {
+        Trip trip = requireAccessibleTrip(userId, tripId);
         releaseExpiredLocks(tripId);
         List<SeatInventory> seats = seatRepo.findByTripIdOrderBySeatNumberAsc(tripId);
         if (seats.isEmpty()) {
@@ -164,7 +217,7 @@ public class ConductorService {
 
     @Transactional
     public BookingResponse manualBooking(SecurityUser user, ManualBookingRequest req) {
-        Trip trip = tripRepo.findById(req.tripId()).orElseThrow(() -> new NotFoundException("Trip not found"));
+        Trip trip = requireAccessibleTrip(user.userId(), req.tripId());
         materializeSeats(trip);
 
         List<SeatInventory> lockedSeats = seatRepo.lockSeatsForUpdate(trip.getId(), req.seatNumbers());
@@ -244,7 +297,7 @@ public class ConductorService {
 
     @Transactional
     public ReconcileResponse reconcile(Long userId, Long tripId, ReconcileRequest req) {
-        Trip trip = tripRepo.findById(tripId).orElseThrow(() -> new NotFoundException("Trip not found"));
+        Trip trip = requireAccessibleTrip(userId, tripId);
         if (trip.getStatus() != Trip.TripStatus.CANCELLED) {
             trip.setStatus(Trip.TripStatus.COMPLETED);
             tripRepo.save(trip);

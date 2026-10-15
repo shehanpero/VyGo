@@ -72,5 +72,5 @@ public class Bus {
 
     public enum BusType { NORMAL, SEMI_LUXURY, LUXURY, AC }
 
-    public enum BusStatus { ACTIVE, MAINTENANCE, INACTIVE }
+    public enum BusStatus { PENDING, VERIFIED, REJECTED, ACTIVE, MAINTENANCE, INACTIVE }
 }

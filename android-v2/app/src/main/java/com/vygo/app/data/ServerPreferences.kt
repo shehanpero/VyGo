@@ -12,14 +12,18 @@ private val Context.dataStore by preferencesDataStore(name = "vygo_settings")
 class ServerPreferences(private val context: Context) {
 
     val serverBaseUrl: Flow<String?> = context.dataStore.data.map { prefs ->
-        prefs[KEY_SERVER_URL]?.takeIf { it.isNotBlank() }
+        when (prefs[KEY_SERVER_URL]) {
+            null -> DEFAULT_SERVER_URL
+            else -> prefs[KEY_SERVER_URL]?.takeIf { it.isNotBlank() }
+        }
     }
 
     suspend fun setServerBaseUrl(url: String) {
         context.dataStore.edit { prefs -> prefs[KEY_SERVER_URL] = url }
     }
 
-    private companion object {
+    companion object {
         val KEY_SERVER_URL = stringPreferencesKey("server_base_url")
+        const val DEFAULT_SERVER_URL = "https://vygo-perovin.pages.dev"
     }
 }

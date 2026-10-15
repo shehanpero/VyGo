@@ -1,0 +1,10 @@
+# VyGo self-hosted face verification service (CPU).
+# Install:  python -m pip install -r requirements.txt
+# Run:      python app.py   (or run.cmd)
+fastapi>=0.110
+uvicorn[standard]>=0.29
+deepface>=0.0.93
+tensorflow>=2.16
+opencv-python>=4.9
+numpy>=1.26
+python-multipart>=0.0.9

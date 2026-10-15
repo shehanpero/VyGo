@@ -16,6 +16,7 @@ public class AppProperties {
     private String corsAllowedOrigins;
     private final Notifications notifications = new Notifications();
     private final Ai ai = new Ai();
+    private final Face face = new Face();
 
     public String getSecret() {
         return secret;
@@ -85,6 +86,10 @@ public class AppProperties {
         return ai;
     }
 
+    public Face getFace() {
+        return face;
+    }
+
     public static class Ai {
 
         private final Llm llm = new Llm();
@@ -139,6 +144,10 @@ public class AppProperties {
         private String emailFrom;
         private boolean emailEnabled;
         private boolean smsEnabled;
+        private String smsProvider;
+        private String smsApiKey;
+        private String smsSenderId;
+        private String smsUserId;
 
         public String getEmailFrom() {
             return emailFrom;
@@ -162,6 +171,79 @@ public class AppProperties {
 
         public void setSmsEnabled(boolean smsEnabled) {
             this.smsEnabled = smsEnabled;
+        }
+
+        public String getSmsProvider() {
+            return smsProvider;
+        }
+
+        public void setSmsProvider(String smsProvider) {
+            this.smsProvider = smsProvider;
+        }
+
+        public String getSmsApiKey() {
+            return smsApiKey;
+        }
+
+        public void setSmsApiKey(String smsApiKey) {
+            this.smsApiKey = smsApiKey;
+        }
+
+        public String getSmsSenderId() {
+            return smsSenderId;
+        }
+
+        public void setSmsSenderId(String smsSenderId) {
+            this.smsSenderId = smsSenderId;
+        }
+
+        public String getSmsUserId() {
+            return smsUserId;
+        }
+
+        public void setSmsUserId(String smsUserId) {
+            this.smsUserId = smsUserId;
+        }
+    }
+
+    /** Self-hosted face verification service (Python/InsightFace). */
+    public static class Face {
+
+        private boolean enabled;
+        private String url = "http://localhost:8100";
+        private double matchThreshold = 0.40;
+        private boolean requireLiveness = true;
+
+        public boolean isEnabled() {
+            return enabled;
+        }
+
+        public void setEnabled(boolean enabled) {
+            this.enabled = enabled;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+
+        public void setUrl(String url) {
+            this.url = url;
+        }
+
+        public double getMatchThreshold() {
+            return matchThreshold;
+        }
+
+        public void setMatchThreshold(double matchThreshold) {
+            this.matchThreshold = matchThreshold;
+        }
+
+        public boolean isRequireLiveness() {
+            return requireLiveness;
+        }
+
+        public void setRequireLiveness(boolean requireLiveness) {
+            this.requireLiveness = requireLiveness;
         }
     }
 }

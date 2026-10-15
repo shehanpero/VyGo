@@ -5,6 +5,7 @@ import com.vygo.dto.admin.AdminPaymentResponse;
 import com.vygo.dto.admin.AnalyticsOverviewResponse;
 import com.vygo.dto.admin.ApprovalRequest;
 import com.vygo.dto.admin.AuditLogResponse;
+import com.vygo.dto.admin.BusVerificationResponse;
 import com.vygo.dto.admin.ComplaintRequest;
 import com.vygo.dto.admin.ComplaintResponse;
 import com.vygo.dto.admin.ComplaintUpdateRequest;
@@ -158,7 +159,7 @@ public class AdminService {
         }
         User.IdentityStatus f = filter;
         return userRepo.findAll().stream()
-                .filter(u -> u.hasRole("DRIVER") || u.hasRole("CONDUCTOR"))
+                .filter(u -> u.hasRole("DRIVER") || u.hasRole("CONDUCTOR") || u.hasRole("OPERATOR"))
                 .filter(u -> f == null || u.getVerificationStatus() == f)
                 .map(this::toStaffVerificationResponse)
                 .toList();
@@ -167,8 +168,8 @@ public class AdminService {
     @Transactional
     public StaffVerificationResponse decideStaffVerification(Long id, VerificationDecisionRequest req) {
         User user = userRepo.findById(id).orElseThrow(() -> new NotFoundException("User not found"));
-        if (!user.hasRole("DRIVER") && !user.hasRole("CONDUCTOR")) {
-            throw new BadRequestException("User is not a driver or conductor");
+        if (!user.hasRole("DRIVER") && !user.hasRole("CONDUCTOR") && !user.hasRole("OPERATOR")) {
+            throw new BadRequestException("User is not a driver, conductor or bus owner / association");
         }
         User.IdentityStatus status;
         try {
@@ -186,6 +187,43 @@ public class AdminService {
         recordAudit(null, "STAFF_IDENTITY_" + status.name(), "User", String.valueOf(id),
                 saved.getFullName() + " identity " + status.name().toLowerCase());
         return toStaffVerificationResponse(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public List<BusVerificationResponse> listBusVerifications(String status) {
+        Bus.BusStatus filter = null;
+        if (status != null && !status.isBlank()) {
+            try {
+                filter = Bus.BusStatus.valueOf(status.trim().toUpperCase());
+            } catch (Exception e) {
+                throw new BadRequestException("Invalid status: " + status);
+            }
+        }
+        Bus.BusStatus f = filter;
+        return busRepo.findAll().stream()
+                .filter(b -> f == null || b.getStatus() == f)
+                .map(this::toBusVerificationResponse)
+                .toList();
+    }
+
+    @Transactional
+    public BusVerificationResponse decideBusVerification(Long id, VerificationDecisionRequest req) {
+        Bus bus = busRepo.findById(id).orElseThrow(() -> new NotFoundException("Bus not found"));
+        String raw = req == null || req.status() == null ? "" : req.status().trim().toUpperCase();
+        Bus.BusStatus status;
+        switch (raw) {
+            case "VERIFIED", "APPROVED", "ACTIVE" -> status = Bus.BusStatus.VERIFIED;
+            case "REJECTED" -> status = Bus.BusStatus.REJECTED;
+            case "PENDING" -> status = Bus.BusStatus.PENDING;
+            case "MAINTENANCE" -> status = Bus.BusStatus.MAINTENANCE;
+            case "INACTIVE" -> status = Bus.BusStatus.INACTIVE;
+            default -> throw new BadRequestException("Status must be VERIFIED, REJECTED or PENDING");
+        }
+        bus.setStatus(status);
+        Bus saved = busRepo.save(bus);
+        recordAudit(null, "BUS_VERIFICATION_" + status.name(), "Bus", String.valueOf(id),
+                saved.getRegistrationNo() + " -> " + status.name());
+        return toBusVerificationResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -466,16 +504,34 @@ public class AdminService {
 
     private StaffVerificationResponse toStaffVerificationResponse(User u) {
         BusOperator owner = u.getOwner();
-        String role = u.hasRole("DRIVER") ? "DRIVER" : u.hasRole("CONDUCTOR") ? "CONDUCTOR" : null;
+        String role = u.hasRole("DRIVER") ? "DRIVER"
+                : u.hasRole("CONDUCTOR") ? "CONDUCTOR"
+                : u.hasRole("OPERATOR") ? "OPERATOR" : null;
+        String operatorType = owner == null ? null : owner.typeOrDefault().name();
         return new StaffVerificationResponse(u.getId(), u.getFullName(), u.getEmail(), u.getMobile(),
-                u.getMobileVerified(), role,
+                u.getMobileVerified(), role, operatorType,
                 owner == null ? null : owner.getId(), owner == null ? null : owner.getName(),
                 u.getIdType(), u.getIdNumber(), u.getIdFrontUrl(), u.getIdBackUrl(), u.getLicenseUrl(),
-                u.getSelfieUrl(), u.getProfileImageUrl(),
+                u.getBusinessDocUrl(), u.getSelfieUrl(), u.getProfileImageUrl(),
+                u.getFaceMatchScore(), u.getLivenessPassed(), u.getLivenessActions(), u.getSpoofPassed(),
                 u.getVerificationStatus() == null ? null : u.getVerificationStatus().name(),
                 u.getVerificationNote(),
                 u.getSubmittedAt() == null ? null : u.getSubmittedAt().format(TS),
                 u.getVerifiedAt() == null ? null : u.getVerifiedAt().format(TS));
+    }
+
+    private BusVerificationResponse toBusVerificationResponse(Bus b) {
+        BusOperator op = b.getOperator();
+        User owner = op == null ? null : op.getUser();
+        return new BusVerificationResponse(b.getId(), b.getRegistrationNo(),
+                b.getBusType() == null ? null : b.getBusType().name(), b.getCapacity(),
+                b.getModel(), b.getYear(), b.getAmenities(),
+                b.getStatus() == null ? null : b.getStatus().name(),
+                op == null ? null : op.getId(), op == null ? null : op.getName(),
+                op == null ? null : op.getRegistrationNo(),
+                op == null ? null : op.typeOrDefault().name(),
+                owner == null ? null : owner.getFullName(),
+                owner == null ? null : owner.getEmail());
     }
 
     private UserDto toUserDto(User u) {

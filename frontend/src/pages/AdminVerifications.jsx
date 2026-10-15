@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { api, errorMessage } from '../api/client'
+import { roleLabel } from '../lib/roles'
 import { FaCheck, FaTimes, FaUserShield, FaMobileAlt, FaImage } from 'react-icons/fa'
 
 const FILTERS = ['PENDING', 'VERIFIED', 'REJECTED', 'ALL']
@@ -61,7 +62,7 @@ export default function AdminVerifications() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-3xl font-extrabold gradient-text">Identity Verifications</h1>
-        <p className="text-sm text-slate-400">Review drivers and conductors who submitted ID documents and a face scan.</p>
+        <p className="text-sm text-slate-400">Review drivers, conductors, and bus owners / associations who submitted identity documents and a face scan.</p>
         <div className="scan-divider mt-4 w-40" />
       </div>
 
@@ -100,7 +101,9 @@ export default function AdminVerifications() {
                   <div className="leading-tight">
                     <div className="font-semibold text-white">{r.fullName}</div>
                     <div className="text-xs text-slate-400">
-                      {r.role === 'DRIVER' ? 'Driver' : 'Conductor'} · {r.ownerName || 'No owner'}
+                      {roleLabel(r.role)}
+                      {r.role === 'OPERATOR' && r.operatorType ? ` · ${r.operatorType}` : ''}
+                      {r.role === 'OPERATOR' ? ` · ${r.ownerName || 'Own account'}` : ` · ${r.ownerName || 'No owner'}`}
                     </div>
                     <div className="mt-0.5 flex items-center gap-2 text-xs text-slate-400">
                       <FaMobileAlt /> {r.mobile}
@@ -147,6 +150,45 @@ export default function AdminVerifications() {
                 </div>
               )}
 
+              {r.businessDocUrl && (
+                <div className="mt-3">
+                  <div className="mb-1 text-xs font-semibold text-slate-300">Business registration</div>
+                  {docLink(r.businessDocUrl)}
+                </div>
+              )}
+
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+                <span className="font-semibold text-slate-300">Face match:</span>
+                {typeof r.faceMatchScore === 'number' ? (
+                  <span
+                    className={`rounded-full px-2 py-0.5 font-semibold ${
+                      r.faceMatchScore >= 0.5 ? 'bg-emerald-500/15 text-emerald-300' : 'bg-amber-500/15 text-amber-300'
+                    }`}
+                  >
+                    {Math.round(r.faceMatchScore * 100)}% similar
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-slate-800 px-2 py-0.5 text-slate-400">not checked</span>
+                )}
+                <span
+                  className={`rounded-full px-2 py-0.5 font-semibold ${
+                    r.livenessPassed ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {r.livenessPassed ? 'liveness passed' : 'liveness not confirmed'}
+                </span>
+                <span
+                  className={`rounded-full px-2 py-0.5 font-semibold ${
+                    r.spoofPassed === false ? 'bg-red-500/15 text-red-300' : r.spoofPassed === true ? 'bg-emerald-500/15 text-emerald-300' : 'bg-slate-800 text-slate-400'
+                  }`}
+                >
+                  {r.spoofPassed === false ? 'spoof detected' : r.spoofPassed === true ? 'live (anti-spoof ok)' : 'anti-spoof not run'}
+                </span>
+                {r.livenessActions && (
+                  <span className="rounded-full bg-slate-800 px-2 py-0.5 text-slate-400">{r.livenessActions.replace(/,/g, ' + ')}</span>
+                )}
+              </div>
+
               {r.note && <p className="mt-3 text-xs text-slate-400">Note: {r.note}</p>}
 
               {r.status === 'PENDING' && (
@@ -172,7 +214,7 @@ export default function AdminVerifications() {
             </h2>
             <p className="mt-1 text-sm text-slate-400">
               {modal.type === 'VERIFIED'
-                ? 'This driver/conductor will be marked as verified.'
+                ? 'This account will be marked as verified.'
                 : 'Add a reason so they know what to fix.'}
             </p>
             <textarea

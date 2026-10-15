@@ -38,6 +38,22 @@ function Log($m) {
   Add-Content -Path $StartLog -Value $line
 }
 
+# Load KEY=VALUE pairs from a .env file into the process environment so the
+# backend child process inherits them. Blank lines and #comments are ignored.
+function Import-DotEnv($path) {
+  if (-not (Test-Path $path)) { return $false }
+  Get-Content -LiteralPath $path | ForEach-Object {
+    $line = $_.Trim()
+    if (-not $line -or $line.StartsWith('#')) { return }
+    $idx = $line.IndexOf('=')
+    if ($idx -lt 1) { return }
+    $key = $line.Substring(0, $idx).Trim()
+    $val = $line.Substring($idx + 1).Trim().Trim('"').Trim("'")
+    Set-Item -Path "Env:$key" -Value $val
+  }
+  return $true
+}
+
 function Resolve-Java {
   $cmd = Get-Command java -ErrorAction SilentlyContinue
   if ($cmd) { return $cmd.Source }
@@ -65,6 +81,14 @@ function Wait-Healthy($timeoutSec) {
 Log '=================================================='
 Log "VyGo start - $(Get-Date)"
 
+# ---- 0. environment ---------------------------------------------------------
+$DotEnv = Join-Path $RepoRoot '.env.deploy.local'
+if (Import-DotEnv $DotEnv) {
+  Log "loaded env from $DotEnv"
+} else {
+  Log "no $DotEnv found (email/SMS/face stay off unless VYGO_* vars are set in the environment)"
+}
+
 # ---- 1. backend -------------------------------------------------------------
 if (Test-Port $BackendPort) {
   Log "backend already listening on :$BackendPort"
@@ -74,6 +98,25 @@ if (Test-Port $BackendPort) {
   Log "starting backend: $java -jar $Jar"
   Start-Process -FilePath $java -ArgumentList '-jar', "`"$Jar`"", '--spring.profiles.active=dev' -WorkingDirectory $BackendDir -WindowStyle Minimized
   if (Wait-Healthy 120) { Log 'backend is healthy' } else { Log 'WARNING: backend did not report healthy within 120s (continuing anyway)' }
+}
+
+# ---- 1b. face service (optional, self-hosted) -------------------------------
+$FacePort = if ($env:VYGO_FACE_URL -match ':(\d+)') { [int]$Matches[1] } else { 8100 }
+if ($env:VYGO_FACE_ENABLED -eq 'true') {
+  if (Test-Port $FacePort) {
+    Log "face service already listening on :$FacePort"
+  } else {
+    $faceRun = Join-Path $RepoRoot 'face-service\run.cmd'
+    if (Test-Path $faceRun) {
+      Log "starting face service (first run installs DeepFace/TensorFlow, may take a while)"
+      Start-Process -FilePath $faceRun -WorkingDirectory (Join-Path $RepoRoot 'face-service') -WindowStyle Minimized
+      Start-Sleep -Seconds 3
+    } else {
+      Log "WARNING: VYGO_FACE_ENABLED=true but $faceRun not found"
+    }
+  }
+} else {
+  Log 'face service disabled (set VYGO_FACE_ENABLED=true to enable)'
 }
 
 # ---- 2. tunnel --------------------------------------------------------------

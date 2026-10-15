@@ -44,6 +44,26 @@ public final class StorageService {
         }
     }
 
+    /**
+     * Reads back a previously stored file from its public {@code /uploads/...}
+     * URL. Used to feed document images to the face verification service.
+     */
+    public byte[] read(String url) {
+        if (url == null || !url.startsWith("/uploads/")) {
+            throw new IllegalArgumentException("Not a stored upload URL: " + url);
+        }
+        String filename = url.substring("/uploads/".length());
+        Path target = root.resolve(filename).normalize();
+        if (!target.startsWith(root)) {
+            throw new IllegalArgumentException("Invalid upload path: " + url);
+        }
+        try {
+            return Files.readAllBytes(target);
+        } catch (IOException e) {
+            throw new IllegalStateException("Stored file not found for " + url, e);
+        }
+    }
+
     private static String extension(String originalFilename, String contentType) {
         if (contentType != null) {
             String type = contentType.split(";")[0].trim().toLowerCase();

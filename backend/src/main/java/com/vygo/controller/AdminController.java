@@ -5,6 +5,7 @@ import com.vygo.dto.admin.AdminPaymentResponse;
 import com.vygo.dto.admin.AnalyticsOverviewResponse;
 import com.vygo.dto.admin.ApprovalRequest;
 import com.vygo.dto.admin.AuditLogResponse;
+import com.vygo.dto.admin.BusVerificationResponse;
 import com.vygo.dto.admin.ComplaintRequest;
 import com.vygo.dto.admin.ComplaintResponse;
 import com.vygo.dto.admin.ComplaintUpdateRequest;
@@ -89,6 +90,20 @@ public class AdminController {
     public StaffVerificationResponse decideStaffVerification(
             @PathVariable Long id, @Valid @RequestBody VerificationDecisionRequest request) {
         return adminService.decideStaffVerification(id, request);
+    }
+
+    @GetMapping("/buses")
+    @Operation(summary = "List buses for vehicle verification, optionally filtered by status")
+    public List<BusVerificationResponse> busVerifications(
+            @RequestParam(required = false) String status) {
+        return adminService.listBusVerifications(status);
+    }
+
+    @PostMapping("/buses/{id}/verification")
+    @Operation(summary = "Approve or reject a bus vehicle verification")
+    public BusVerificationResponse decideBusVerification(
+            @PathVariable Long id, @Valid @RequestBody VerificationDecisionRequest request) {
+        return adminService.decideBusVerification(id, request);
     }
 
     @GetMapping("/users")

@@ -146,6 +146,7 @@ export default function Layout({ children }) {
       <AnimatedNavLink to="/operator/expenses">Expenses</AnimatedNavLink>
       <AnimatedNavLink to="/operator/live">Live</AnimatedNavLink>
       <AnimatedNavLink to="/operator/reports">Reports</AnimatedNavLink>
+      <AnimatedNavLink to="/verify">Verify ID</AnimatedNavLink>
       <AnimatedNavLink to="/scan">Scan QR</AnimatedNavLink>
     </>
   )
@@ -153,6 +154,7 @@ export default function Layout({ children }) {
     <>
       <AnimatedNavLink to="/admin" end>Dashboard</AnimatedNavLink>
       <AnimatedNavLink to="/admin/operators">Bus Owners</AnimatedNavLink>
+      <AnimatedNavLink to="/admin/buses">Vehicle Verification</AnimatedNavLink>
       <AnimatedNavLink to="/admin/verifications">Verifications</AnimatedNavLink>
       <AnimatedNavLink to="/admin/complaints">Complaints</AnimatedNavLink>
       <AnimatedNavLink to="/admin/bookings">Bookings</AnimatedNavLink>
@@ -202,6 +204,7 @@ export default function Layout({ children }) {
       <NavLink to="/operator/expenses" className={mobileLinkClass} onClick={closeMenu}>Expenses</NavLink>
       <NavLink to="/operator/live" className={mobileLinkClass} onClick={closeMenu}>Live Tracking</NavLink>
       <NavLink to="/operator/reports" className={mobileLinkClass} onClick={closeMenu}>Reports</NavLink>
+      <NavLink to="/verify" className={mobileLinkClass} onClick={closeMenu}>Verify ID</NavLink>
       <NavLink to="/scan" className={mobileLinkClass} onClick={closeMenu}>Scan QR</NavLink>
     </>
   )
@@ -209,6 +212,7 @@ export default function Layout({ children }) {
     <>
       <NavLink to="/admin" className={mobileLinkClass} end onClick={closeMenu}>Dashboard</NavLink>
       <NavLink to="/admin/operators" className={mobileLinkClass} onClick={closeMenu}>Bus Owners</NavLink>
+      <NavLink to="/admin/buses" className={mobileLinkClass} onClick={closeMenu}>Vehicle Verification</NavLink>
       <NavLink to="/admin/verifications" className={mobileLinkClass} onClick={closeMenu}>Verifications</NavLink>
       <NavLink to="/admin/complaints" className={mobileLinkClass} onClick={closeMenu}>Complaints</NavLink>
       <NavLink to="/admin/bookings" className={mobileLinkClass} onClick={closeMenu}>Bookings</NavLink>

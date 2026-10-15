@@ -8,6 +8,9 @@ public record StaffVerificationRequest(
         @NotBlank String idFrontUrl,
         String idBackUrl,
         String licenseUrl,
+        String businessDocUrl,
         @NotBlank String selfieUrl,
-        Long ownerId) {
+        Long ownerId,
+        Boolean livenessPassed,
+        String livenessActions) {
 }

@@ -39,16 +39,16 @@ public class ConductorController {
     }
 
     @GetMapping("/trips")
-    @Operation(summary = "List trips for a date with occupancy")
+    @Operation(summary = "List the caller's operator trips for a date with occupancy")
     public List<TripListRowResponse> trips(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return conductorService.tripsForDate(date == null ? LocalDate.now() : date);
+        return conductorService.tripsForDate(CurrentUser.id(), date == null ? LocalDate.now() : date);
     }
 
     @GetMapping("/trips/{tripId}/seats")
     @Operation(summary = "Live seat occupancy for a trip (with passenger names)")
     public SeatMapResponse tripSeats(@PathVariable Long tripId) {
-        return conductorService.tripSeats(tripId);
+        return conductorService.tripSeats(CurrentUser.id(), tripId);
     }
 
     @PostMapping("/manual-booking")

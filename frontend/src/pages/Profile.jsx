@@ -114,7 +114,12 @@ export default function Profile() {
     try {
       const res = await api.post('/auth/mobile/verify-request')
       setOtpStage('sent')
-      setOtpMsg(res.data?.devOtp ? `Sandbox code: ${res.data.devOtp}` : 'Code sent to your mobile.')
+      const channel = user?.email ? 'mobile number and email' : 'mobile number'
+      setOtpMsg(
+        res.data?.devOtp
+          ? `Code sent to your ${channel}. Development code: ${res.data.devOtp}`
+          : `We sent a 6-digit code to your ${channel}.`
+      )
     } catch (err) {
       setOtpError(errorMessage(err, 'Could not send the code'))
     } finally {
@@ -246,6 +251,16 @@ export default function Profile() {
                   {otpBusy ? 'Verifying…' : 'Verify'}
                 </button>
               </div>
+            )}
+            {otpStage === 'sent' && (
+              <button
+                type="button"
+                className="text-xs font-medium text-accent-400 hover:text-accent-300 disabled:opacity-50"
+                onClick={requestOtp}
+                disabled={otpBusy}
+              >
+                Didn’t get it? Resend code
+              </button>
             )}
             {otpMsg && <p className="text-xs text-emerald-400">{otpMsg}</p>}
             {otpError && <p className="text-xs text-red-400">{otpError}</p>}

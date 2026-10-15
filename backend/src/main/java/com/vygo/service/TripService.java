@@ -178,6 +178,23 @@ public class TripService {
                 });
     }
 
+    /**
+     * All trips for one operator on a given date. Built from the operator's ACTIVE
+     * schedules so buses/schedules the owner has just added show up immediately,
+     * without waiting for a passenger search to materialise the trip row.
+     */
+    @Transactional
+    public List<Trip> tripsForOperatorOnDate(Long operatorId, LocalDate date) {
+        if (operatorId == null) {
+            return List.of();
+        }
+        return scheduleRepository.findByOperatorIdAndStatus(operatorId, ScheduleStatus.ACTIVE).stream()
+                .filter(s -> isEffectiveOn(s, date))
+                .map(s -> getOrCreateTrip(s, date))
+                .sorted(Comparator.comparing(t -> t.getSchedule().getDepartureTime()))
+                .toList();
+    }
+
     @Transactional
     public void materializeSeats(Trip trip) {
         if (seatInventoryRepository.countByTripId(trip.getId()) > 0) {

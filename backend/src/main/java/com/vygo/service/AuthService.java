@@ -23,11 +23,16 @@ import com.vygo.exception.ConflictException;
 import com.vygo.exception.ForbiddenException;
 import com.vygo.exception.NotFoundException;
 import com.vygo.exception.UnauthorizedException;
+import com.vygo.integration.EmailSender;
+import com.vygo.integration.FaceVerificationClient;
+import com.vygo.integration.SmsSender;
+import com.vygo.integration.StorageService;
 import com.vygo.repository.BusOperatorRepository;
 import com.vygo.repository.RoleRepository;
 import com.vygo.repository.UserRepository;
 import com.vygo.security.JwtTokenProvider;
 import com.vygo.security.SecurityUser;
+import com.vygo.util.SriLankaIdValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
@@ -45,7 +50,7 @@ import java.util.Map;
 public class AuthService {
 
     private static final Logger log = LoggerFactory.getLogger(AuthService.class);
-    private static final String DEV_OTP = "123456";
+    private static final int OTP_TTL_MINUTES = 5;
 
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
@@ -55,6 +60,10 @@ public class AuthService {
     private final AppProperties appProperties;
     private final AuditService auditService;
     private final Environment environment;
+    private final EmailSender emailSender;
+    private final SmsSender smsSender;
+    private final FaceVerificationClient faceVerificationClient;
+    private final StorageService storageService;
 
     public AuthService(UserRepository userRepository,
                        RoleRepository roleRepository,
@@ -63,7 +72,11 @@ public class AuthService {
                        JwtTokenProvider jwtTokenProvider,
                        AppProperties appProperties,
                        AuditService auditService,
-                       Environment environment) {
+                       Environment environment,
+                       EmailSender emailSender,
+                       SmsSender smsSender,
+                       FaceVerificationClient faceVerificationClient,
+                       StorageService storageService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.busOperatorRepository = busOperatorRepository;
@@ -72,6 +85,10 @@ public class AuthService {
         this.appProperties = appProperties;
         this.auditService = auditService;
         this.environment = environment;
+        this.emailSender = emailSender;
+        this.smsSender = smsSender;
+        this.faceVerificationClient = faceVerificationClient;
+        this.storageService = storageService;
     }
 
     @Transactional
@@ -159,19 +176,13 @@ public class AuthService {
 
     @Transactional
     public Map<String, String> otpRequest(OtpRequest req) {
-        boolean dev = isDev();
-        String otp = dev ? DEV_OTP : String.format("%06d", new SecureRandom().nextInt(1_000_000));
+        String otp = generateOtp();
         User user = userRepository.findByMobile(req.mobile()).orElse(null);
         if (user != null) {
-            user.setOtpCode(otp);
-            user.setOtpExpiresAt(LocalDateTime.now().plusMinutes(5));
-            userRepository.save(user);
+            storeOtp(user, otp);
         }
-        if (dev) {
-            log.info("OTP generated for mobile {}: {}", req.mobile(), otp);
-            return Map.of("message", "OTP sent", "devOtp", otp);
-        }
-        return Map.of("message", "OTP sent");
+        deliverOtp(req.mobile(), user == null ? null : user.getEmail(), otp, "login");
+        return otpResponse(otp);
     }
 
     @Transactional
@@ -268,16 +279,10 @@ public class AuthService {
     public Map<String, String> mobileVerifyRequest(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
-        boolean dev = isDev();
-        String otp = dev ? DEV_OTP : String.format("%06d", new SecureRandom().nextInt(1_000_000));
-        user.setOtpCode(otp);
-        user.setOtpExpiresAt(LocalDateTime.now().plusMinutes(5));
-        userRepository.save(user);
-        if (dev) {
-            log.info("Mobile verification OTP for user {}: {}", userId, otp);
-            return Map.of("message", "OTP sent", "devOtp", otp);
-        }
-        return Map.of("message", "OTP sent");
+        String otp = generateOtp();
+        storeOtp(user, otp);
+        deliverOtp(user.getMobile(), user.getEmail(), otp, "mobile verification");
+        return otpResponse(otp);
     }
 
     @Transactional
@@ -303,17 +308,31 @@ public class AuthService {
                 .orElseThrow(() -> new NotFoundException("User not found"));
         boolean isDriver = user.hasRole(RoleCode.DRIVER.name());
         boolean isConductor = user.hasRole(RoleCode.CONDUCTOR.name());
-        if (!isDriver && !isConductor) {
-            throw new ForbiddenException("Only drivers and conductors submit identity verification");
+        boolean isOperator = user.hasRole(RoleCode.OPERATOR.name());
+        if (!isDriver && !isConductor && !isOperator) {
+            throw new ForbiddenException("Only drivers, conductors and bus owners / associations submit identity verification");
         }
-        if (req.ownerId() != null) {
-            BusOperator owner = busOperatorRepository.findById(req.ownerId())
-                    .orElseThrow(() -> new BadRequestException("Bus owner / association not found"));
+
+        BusOperator owner;
+        if (isOperator) {
+            // A bus owner / association verifies their own business entity.
+            owner = busOperatorRepository.findByUserId(userId)
+                    .orElseGet(() -> req.ownerId() == null ? null : busOperatorRepository.findById(req.ownerId()).orElse(null));
+            if (owner == null) {
+                throw new BadRequestException("Your bus owner / association profile was not found");
+            }
             user.setOwner(owner);
+        } else {
+            if (req.ownerId() != null) {
+                BusOperator selected = busOperatorRepository.findById(req.ownerId())
+                        .orElseThrow(() -> new BadRequestException("Bus owner / association not found"));
+                user.setOwner(selected);
+            }
+            if (user.getOwner() == null) {
+                throw new BadRequestException("Select the bus owner / association you belong to");
+            }
         }
-        if (user.getOwner() == null) {
-            throw new BadRequestException("Select the bus owner / association you belong to");
-        }
+
         String idType = req.idType().trim().toUpperCase();
         if (!idType.equals("NIC") && !idType.equals("PASSPORT")) {
             throw new BadRequestException("ID type must be NIC or PASSPORT");
@@ -327,15 +346,62 @@ public class AuthService {
         if (isDriver && isBlank(req.licenseUrl())) {
             throw new BadRequestException("Upload your driving licence");
         }
+        if (isOperator && isBlank(req.businessDocUrl())) {
+            throw new BadRequestException("Upload your business registration certificate");
+        }
         if (isBlank(req.selfieUrl())) {
             throw new BadRequestException("Complete the face scan");
         }
+
+        String idError = SriLankaIdValidator.validateIdNumber(idType, req.idNumber());
+        if (idError != null) {
+            throw new BadRequestException(idError);
+        }
+
+        Double faceScore = null;
+        Boolean spoofPassed = null;
+        Boolean livenessPassed = req.livenessPassed();
+        if (faceVerificationClient.isEnabled()) {
+            if (appProperties.getFace().isRequireLiveness() && !Boolean.TRUE.equals(livenessPassed)) {
+                throw new BadRequestException(
+                        "Liveness check not completed. Retake the face scan and follow the on-screen prompts.");
+            }
+            FaceVerificationClient.FaceMatchResult result = runFaceMatch(req.selfieUrl(), req.idFrontUrl());
+            if (result.available()) {
+                if (result.selfieFaces() == 0) {
+                    throw new BadRequestException(
+                            "No face was detected in your scan. Retake it facing the camera in good light.");
+                }
+                if (result.documentFaces() == 0) {
+                    throw new BadRequestException(
+                            "No face was detected on your ID document. Retake the photo so the portrait is clear.");
+                }
+                if (!result.selfieReal()) {
+                    throw new BadRequestException(
+                            "The face scan looks like a photo or screen rather than a live person. Use the camera and follow the on-screen prompts.");
+                }
+                if (!result.matched()) {
+                    throw new BadRequestException(
+                            "Your face scan does not match the photo on your ID document.");
+                }
+                faceScore = result.similarity();
+                spoofPassed = result.selfieReal();
+            } else {
+                log.warn("Face verification unavailable for user {}: {}", userId, result.message());
+            }
+        }
+
         user.setIdType(idType);
-        user.setIdNumber(req.idNumber().trim());
+        user.setIdNumber(SriLankaIdValidator.normalize(req.idNumber()));
         user.setIdFrontUrl(req.idFrontUrl().trim());
         user.setIdBackUrl(isBlank(req.idBackUrl()) ? null : req.idBackUrl().trim());
         user.setLicenseUrl(isBlank(req.licenseUrl()) ? null : req.licenseUrl().trim());
+        user.setBusinessDocUrl(isBlank(req.businessDocUrl()) ? null : req.businessDocUrl().trim());
         user.setSelfieUrl(req.selfieUrl().trim());
+        user.setFaceMatchScore(faceScore);
+        user.setSpoofPassed(spoofPassed);
+        user.setLivenessPassed(livenessPassed);
+        user.setLivenessActions(isBlank(req.livenessActions()) ? null : req.livenessActions().trim());
         user.setVerificationStatus(User.IdentityStatus.PENDING);
         user.setVerificationNote(null);
         user.setSubmittedAt(LocalDateTime.now());
@@ -357,6 +423,17 @@ public class AuthService {
         return s == null || s.isBlank();
     }
 
+    private FaceVerificationClient.FaceMatchResult runFaceMatch(String selfieUrl, String idFrontUrl) {
+        try {
+            byte[] selfie = storageService.read(selfieUrl);
+            byte[] document = storageService.read(idFrontUrl);
+            return faceVerificationClient.match(selfie, document);
+        } catch (Exception e) {
+            log.warn("Could not read identity images for face match: {}", e.getMessage());
+            return new FaceVerificationClient.FaceMatchResult(false, 0, 0, 0, false, true, 0, "image read failed");
+        }
+    }
+
     private BusOperator.OperatorType parseOperatorType(String type) {
         if (type != null && "ASSOCIATION".equalsIgnoreCase(type.trim())) {
             return BusOperator.OperatorType.ASSOCIATION;
@@ -367,12 +444,15 @@ public class AuthService {
     private StaffVerificationResponse toVerificationResponse(User u) {
         BusOperator owner = u.getOwner();
         String role = u.hasRole(RoleCode.DRIVER.name()) ? "DRIVER"
-                : u.hasRole(RoleCode.CONDUCTOR.name()) ? "CONDUCTOR" : null;
+                : u.hasRole(RoleCode.CONDUCTOR.name()) ? "CONDUCTOR"
+                : u.hasRole(RoleCode.OPERATOR.name()) ? "OPERATOR" : null;
+        String operatorType = owner == null ? null : owner.typeOrDefault().name();
         return new StaffVerificationResponse(u.getId(), u.getFullName(), u.getEmail(), u.getMobile(),
-                u.getMobileVerified(), role,
+                u.getMobileVerified(), role, operatorType,
                 owner == null ? null : owner.getId(), owner == null ? null : owner.getName(),
                 u.getIdType(), u.getIdNumber(), u.getIdFrontUrl(), u.getIdBackUrl(), u.getLicenseUrl(),
-                u.getSelfieUrl(), u.getProfileImageUrl(),
+                u.getBusinessDocUrl(), u.getSelfieUrl(), u.getProfileImageUrl(),
+                u.getFaceMatchScore(), u.getLivenessPassed(), u.getLivenessActions(), u.getSpoofPassed(),
                 u.getVerificationStatus() == null ? null : u.getVerificationStatus().name(),
                 u.getVerificationNote(),
                 u.getSubmittedAt() == null ? null : u.getSubmittedAt().toString(),
@@ -381,6 +461,42 @@ public class AuthService {
 
     private boolean isDev() {
         return environment.acceptsProfiles(Profiles.of("dev"));
+    }
+
+    private String generateOtp() {
+        return String.format("%06d", new SecureRandom().nextInt(1_000_000));
+    }
+
+    private void storeOtp(User user, String otp) {
+        user.setOtpCode(otp);
+        user.setOtpExpiresAt(LocalDateTime.now().plusMinutes(OTP_TTL_MINUTES));
+        userRepository.save(user);
+    }
+
+    /**
+     * Delivers a verification code over every channel available for the account:
+     * SMS to the mobile number and (when present) an email copy. Failures are
+     * logged but never thrown, so a code request still returns success to the
+     * caller; the code itself is never disclosed outside the delivered message.
+     */
+    private void deliverOtp(String mobile, String email, String otp, String purpose) {
+        String message = "VyGo " + purpose + " code: " + otp
+                + ". Valid for " + OTP_TTL_MINUTES + " minutes. Do not share this code.";
+        boolean smsSent = smsSender.send(mobile, message);
+        boolean emailSent = false;
+        if (email != null && !email.isBlank()) {
+            emailSent = emailSender.sendOtp(email, otp, purpose);
+        }
+        if (!smsSent && !emailSent) {
+            log.warn("OTP for mobile={} could not be delivered over SMS or email", mobile);
+        }
+    }
+
+    private Map<String, String> otpResponse(String otp) {
+        if (isDev()) {
+            return Map.of("message", "OTP sent", "devOtp", otp);
+        }
+        return Map.of("message", "OTP sent");
     }
 
     private AuthResponse buildAuthResponse(User user) {

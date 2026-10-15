@@ -88,8 +88,28 @@ public class User {
     @Column(name = "license_url", length = 300)
     private String licenseUrl;
 
+    /** Business registration certificate — required for bus owners & associations. */
+    @Column(name = "business_doc_url", length = 300)
+    private String businessDocUrl;
+
     @Column(name = "selfie_url", length = 300)
     private String selfieUrl;
+
+    /** Cosine similarity between the selfie face and the ID-document face (0..1). */
+    @Column(name = "face_match_score")
+    private Double faceMatchScore;
+
+    /** Whether the client-side liveness challenge passed before the selfie was taken. */
+    @Column(name = "liveness_passed")
+    private Boolean livenessPassed;
+
+    /** Which guided liveness actions the user completed, e.g. "blink,turn-left,smile". */
+    @Column(name = "liveness_actions", length = 120)
+    private String livenessActions;
+
+    /** Passive anti-spoofing result from the face service (false = likely a photo/screen). */
+    @Column(name = "spoof_passed")
+    private Boolean spoofPassed;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "verification_status", length = 20)

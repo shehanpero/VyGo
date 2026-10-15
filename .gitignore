@@ -42,6 +42,10 @@ expo-app/
 *.iml
 .DS_Store
 
+# ---------------- Cloudflare wrangler ----------------
+.wrangler/
+.dev.vars
+
 # ---------------- Logs ----------------
 *.log
 logs/
@@ -52,6 +56,9 @@ logs/
 .env.*.local
 application-local.yml
 *-local.properties
+android-v2/keystore.properties
+frontend/android/keystore.properties
+**/keystore.properties
 
 # ---------------- Runtime data (never commit user/DB data) ----------------
 backend/data/

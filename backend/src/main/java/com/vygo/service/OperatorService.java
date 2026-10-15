@@ -163,7 +163,7 @@ public class OperatorService {
                 .amenities(writeAmenities(req.amenities()))
                 .model(req.model())
                 .year(req.year())
-                .status(Bus.BusStatus.ACTIVE)
+                .status(Bus.BusStatus.PENDING)
                 .build();
         Bus saved = busRepo.save(bus);
         log.info("Bus created reg={} operatorId={}", saved.getRegistrationNo(), operator.getId());
@@ -261,6 +261,7 @@ public class OperatorService {
         if (!bus.getOperator().getId().equals(operator.getId())) {
             throw new ForbiddenException("Bus does not belong to your operator");
         }
+        requireVerifiedBus(bus);
         Route route = routeRepo.findById(req.routeId()).orElseThrow(() -> new NotFoundException("Route not found"));
         Schedule schedule = Schedule.builder()
                 .route(route)
@@ -295,6 +296,7 @@ public class OperatorService {
         if (!bus.getOperator().getId().equals(operator.getId())) {
             throw new ForbiddenException("Bus does not belong to your operator");
         }
+        requireVerifiedBus(bus);
         Route route = routeRepo.findById(req.routeId()).orElseThrow(() -> new NotFoundException("Route not found"));
         schedule.setRoute(route);
         schedule.setBus(bus);
@@ -552,6 +554,13 @@ public class OperatorService {
     }
 
     // ---- helpers -----------------------------------------------------
+
+    private void requireVerifiedBus(Bus bus) {
+        if (bus.getStatus() != Bus.BusStatus.VERIFIED) {
+            throw new BadRequestException("Bus " + bus.getRegistrationNo()
+                    + " is not verified yet. It must be approved during vehicle verification before it can be scheduled.");
+        }
+    }
 
     private Bus requireOwnedBus(BusOperator operator, Long busId) {
         Bus bus = busRepo.findById(busId).orElseThrow(() -> new NotFoundException("Bus not found"));

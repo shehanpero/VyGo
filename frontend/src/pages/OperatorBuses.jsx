@@ -27,9 +27,21 @@ const typeBadge = {
 }
 
 const statusBadge = {
+  PENDING: 'bg-amber-500/15 text-amber-400',
+  VERIFIED: 'bg-emerald-500/15 text-emerald-400',
+  REJECTED: 'bg-red-500/15 text-red-400',
   ACTIVE: 'bg-emerald-500/15 text-emerald-400',
   MAINTENANCE: 'bg-amber-500/15 text-amber-400',
   INACTIVE: 'bg-red-500/15 text-red-400',
+}
+
+const statusLabel = {
+  PENDING: 'Pending verification',
+  VERIFIED: 'Verified',
+  REJECTED: 'Rejected',
+  ACTIVE: 'Active',
+  MAINTENANCE: 'Maintenance',
+  INACTIVE: 'Inactive',
 }
 
 const badgeFor = (map, key, fallback) => map[key] || fallback
@@ -213,6 +225,19 @@ export default function OperatorBuses() {
 
       {error && <div role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>}
 
+      {buses.some((b) => b.status === 'PENDING') && (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+          <strong className="font-semibold">Vehicle verification required.</strong> Newly added buses stay
+          <span className="mx-1 font-semibold">Pending verification</span> and cannot be scheduled until a platform
+          admin verifies the vehicle.
+        </div>
+      )}
+      {buses.some((b) => b.status === 'REJECTED') && (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          One or more buses were rejected during vehicle verification. Update the details and contact support for a re-check.
+        </div>
+      )}
+
       {open && (
         <form onSubmit={submit} className="glass-strong glow-border space-y-4 rounded-2xl p-6">
           <div className="flex items-center justify-between">
@@ -312,7 +337,9 @@ export default function OperatorBuses() {
                     <td className="px-5 py-3 text-slate-300">{bus.capacity ?? '—'}</td>
                     <td className="px-5 py-3 text-slate-300">{normalizeAmenities(bus.amenities).join(', ') || '—'}</td>
                     <td className="px-5 py-3">
-                      <span className={`badge ${badgeFor(statusBadge, bus.status, 'bg-slate-500/15 text-slate-300')}`}>{bus.status || '—'}</span>
+                      <span className={`badge ${badgeFor(statusBadge, bus.status, 'bg-slate-500/15 text-slate-300')}`}>
+                        {statusLabel[bus.status] || bus.status || '—'}
+                      </span>
                     </td>
                     <td className="px-5 py-3">
                       <div className="flex justify-end gap-2">

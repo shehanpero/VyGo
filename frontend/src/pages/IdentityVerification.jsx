@@ -12,6 +12,7 @@ import {
   FaIdBadge,
   FaUserCheck,
   FaArrowRight,
+  FaBuilding,
 } from 'react-icons/fa'
 
 function dataUrlToBlob(dataUrl) {
@@ -21,6 +22,33 @@ function dataUrlToBlob(dataUrl) {
   const buf = new Uint8Array(bin.length)
   for (let i = 0; i < bin.length; i += 1) buf[i] = bin.charCodeAt(i)
   return new Blob([buf], { type: mime })
+}
+
+// Mirrors the backend SriLankaIdValidator: structure + embedded birth date.
+function validateIdNumber(idType, raw) {
+  const value = (raw || '').replace(/[\s-]/g, '').toUpperCase()
+  if (!value) return 'Document number is required'
+  if (idType === 'PASSPORT') {
+    return /^[A-Z]{1,2}\d{6,9}$/.test(value) ? '' : 'Enter a valid passport number, e.g. N1234567'
+  }
+  let year
+  let day
+  if (/^\d{9}[VX]$/.test(value)) {
+    year = Number(value.slice(0, 2))
+    day = Number(value.slice(2, 5))
+    year = year >= 30 ? 1900 + year : 2000 + year
+  } else if (/^\d{12}$/.test(value)) {
+    year = Number(value.slice(0, 4))
+    day = Number(value.slice(4, 7))
+  } else {
+    return 'Enter a valid NIC, e.g. 199012345678 or 901234567V'
+  }
+  const effective = day > 500 ? day - 500 : day
+  const maxDay = ((y) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0 ? 366 : 365)(year)
+  if (year < 1900 || year > new Date().getFullYear() || effective < 1 || effective > maxDay) {
+    return 'That NIC does not encode a real birth date'
+  }
+  return ''
 }
 
 const STATUS_META = {
@@ -64,7 +92,9 @@ export default function IdentityVerification() {
   const { user, setUser } = useAuth()
   const isDriver = user?.roles?.includes('DRIVER')
   const isConductor = user?.roles?.includes('CONDUCTOR')
-  const eligible = isDriver || isConductor
+  const isOperator = user?.roles?.includes('OPERATOR')
+  const eligible = isDriver || isConductor || isOperator
+  const roleLabel = isOperator ? 'Bus owner / association' : isDriver ? 'Driver' : 'Conductor'
 
   const [verification, setVerification] = useState(null)
   const [owners, setOwners] = useState([])
@@ -75,9 +105,12 @@ export default function IdentityVerification() {
     idFrontUrl: '',
     idBackUrl: '',
     licenseUrl: '',
+    businessDocUrl: '',
     selfieUrl: '',
   })
-  const [capture, setCapture] = useState(null) // 'idFront' | 'idBack' | 'license' | 'selfie'
+  const [capture, setCapture] = useState(null) // 'idFront' | 'idBack' | 'license' | 'businessDoc' | 'selfie'
+  const [selfieLiveness, setSelfieLiveness] = useState(false)
+  const [selfieActions, setSelfieActions] = useState('')
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState('')
   const [saving, setSaving] = useState(false)
@@ -105,6 +138,7 @@ export default function IdentityVerification() {
             idFrontUrl: v.idFrontUrl || '',
             idBackUrl: v.idBackUrl || '',
             licenseUrl: v.licenseUrl || '',
+            businessDocUrl: v.businessDocUrl || '',
             selfieUrl: v.selfieUrl || '',
           }))
         }
@@ -120,7 +154,7 @@ export default function IdentityVerification() {
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
 
-  const upload = async (field, dataUrl) => {
+  const upload = async (field, dataUrl, meta) => {
     setError('')
     setUploading(field)
     try {
@@ -129,6 +163,10 @@ export default function IdentityVerification() {
       fd.append('file', blob, `${field}.jpg`)
       const res = await api.post('/uploads', fd)
       setForm((f) => ({ ...f, [field]: res.data.url }))
+      if (field === 'selfie') {
+        setSelfieLiveness(Boolean(meta?.livenessPassed))
+        setSelfieActions(meta?.actions || '')
+      }
     } catch (err) {
       setError(errorMessage(err, 'Upload failed'))
     } finally {
@@ -140,13 +178,14 @@ export default function IdentityVerification() {
   const meta = STATUS_META[status] || STATUS_META.UNVERIFIED
   const StatusIcon = meta.icon
   const canSubmit = useMemo(() => {
-    if (!form.ownerId) return false
-    if (!/^\S.*/.test(form.idNumber.trim())) return false
+    if (!isOperator && !form.ownerId) return false
+    if (validateIdNumber(form.idType, form.idNumber)) return false
     if (!form.idFrontUrl || !form.selfieUrl) return false
     if (form.idType === 'NIC' && !form.idBackUrl) return false
     if (isDriver && !form.licenseUrl) return false
+    if (isOperator && !form.businessDocUrl) return false
     return true
-  }, [form, isDriver])
+  }, [form, isDriver, isOperator])
 
   const submit = async (e) => {
     e.preventDefault()
@@ -160,8 +199,11 @@ export default function IdentityVerification() {
         idFrontUrl: form.idFrontUrl,
         idBackUrl: form.idType === 'NIC' ? form.idBackUrl : null,
         licenseUrl: isDriver ? form.licenseUrl : form.licenseUrl || null,
+        businessDocUrl: isOperator ? form.businessDocUrl : null,
         selfieUrl: form.selfieUrl,
-        ownerId: form.ownerId ? Number(form.ownerId) : null,
+        ownerId: !isOperator && form.ownerId ? Number(form.ownerId) : null,
+        livenessPassed: selfieLiveness,
+        livenessActions: selfieActions || null,
       })
       setVerification(res.data)
       const meRes = await api.get('/auth/me')
@@ -181,7 +223,7 @@ export default function IdentityVerification() {
           <FaIdBadge className="mx-auto mb-3 text-3xl text-slate-500" />
           <h1 className="font-display text-xl font-bold text-white">Identity verification</h1>
           <p className="mt-2 text-sm text-slate-400">
-            Identity verification is only available for registered drivers and conductors.
+            Identity verification is available for registered drivers, conductors, and bus owners / associations.
           </p>
           <Link to="/account" className="btn-secondary mt-4">
             Back to profile
@@ -196,7 +238,9 @@ export default function IdentityVerification() {
       <div>
         <h1 className="font-display text-3xl font-extrabold gradient-text">Identity verification</h1>
         <p className="text-sm text-slate-400">
-          Verify who you are so passengers and your bus owner / association can trust you.
+          {isOperator
+            ? 'Verify your identity and business so passengers and drivers can trust your operation.'
+            : 'Verify who you are so passengers and your bus owner / association can trust you.'}
         </p>
         <div className="scan-divider mt-4 w-40" />
       </div>
@@ -210,7 +254,7 @@ export default function IdentityVerification() {
             <FaUserCheck className="text-accent-400" /> {meta.label}
           </div>
           <div className="text-xs text-slate-400">
-            {isDriver ? 'Driver' : 'Conductor'}
+            {roleLabel}
             {verification?.ownerName ? ` · ${verification.ownerName}` : ''}
           </div>
         </div>
@@ -233,15 +277,27 @@ export default function IdentityVerification() {
         </div>
       ) : (
         <form onSubmit={submit} className="glass-strong glow-border space-y-5 rounded-2xl p-6">
-          <div>
-            <label className="label" htmlFor="verify-owner">Bus owner / association <span className="text-red-400">*</span></label>
-            <select id="verify-owner" className="input" value={form.ownerId} onChange={set('ownerId')} required>
-              <option value="">Select the owner you belong to</option>
-              {owners.map((o) => (
-                <option key={o.id} value={o.id}>{o.name}</option>
-              ))}
-            </select>
-          </div>
+          {!isOperator && (
+            <div>
+              <label className="label" htmlFor="verify-owner">Bus owner / association <span className="text-red-400">*</span></label>
+              <select id="verify-owner" className="input" value={form.ownerId} onChange={set('ownerId')} required>
+                <option value="">Select the owner you belong to</option>
+                {owners.map((o) => (
+                  <option key={o.id} value={o.id}>{o.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {isOperator && (
+            <div className="flex items-start gap-3 rounded-xl border border-accent-400/30 bg-accent-500/5 p-3">
+              <FaBuilding className="mt-0.5 text-accent-400" />
+              <p className="text-xs text-slate-300">
+                You are verifying as a <span className="font-semibold text-white">bus owner / association</span>. We will
+                check your NIC, your business registration certificate, and your face.
+              </p>
+            </div>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
@@ -261,6 +317,9 @@ export default function IdentityVerification() {
                 placeholder={form.idType === 'NIC' ? '199012345678' : 'N1234567'}
                 required
               />
+              {form.idNumber && validateIdNumber(form.idType, form.idNumber) && (
+                <p className="mt-1 text-xs text-red-400">{validateIdNumber(form.idType, form.idNumber)}</p>
+              )}
             </div>
           </div>
 
@@ -280,20 +339,36 @@ export default function IdentityVerification() {
               onOpen={() => setCapture('idBack')}
             />
           )}
-          <CaptureField
-            label={isDriver ? 'Driving licence' : 'Driving licence (optional)'}
-            hint={isDriver ? 'Required for drivers' : 'Add it if you have one'}
-            url={form.licenseUrl}
-            required={isDriver}
-            onOpen={() => setCapture('license')}
-          />
+          {isOperator && (
+            <CaptureField
+              label="Business registration certificate"
+              hint="The certificate showing your bus owner / association registration"
+              url={form.businessDocUrl}
+              required
+              onOpen={() => setCapture('businessDoc')}
+            />
+          )}
+          {!isOperator && (
+            <CaptureField
+              label={isDriver ? 'Driving licence' : 'Driving licence (optional)'}
+              hint={isDriver ? 'Required for drivers' : 'Add it if you have one'}
+              url={form.licenseUrl}
+              required={isDriver}
+              onOpen={() => setCapture('license')}
+            />
+          )}
           <CaptureField
             label="Face scan"
-            hint="A live camera scan with liveness check"
+            hint="A guided live scan (blink + turn your head) — it must match your ID photo"
             url={form.selfieUrl}
             required
             onOpen={() => setCapture('selfie')}
           />
+          {form.selfieUrl && !selfieLiveness && (
+            <p className="text-xs text-amber-300">
+              This face scan was not taken live. Retake it via the camera (not upload) so liveness and face-match can be checked.
+            </p>
+          )}
 
           {error && <p role="alert" className="text-sm text-red-400">{error}</p>}
           {message && <p role="status" className="text-sm text-emerald-400">{message}</p>}
@@ -310,10 +385,10 @@ export default function IdentityVerification() {
           mode={capture === 'selfie' ? 'face' : 'document'}
           liveness={capture === 'selfie'}
           onCancel={() => setCapture(null)}
-          onCapture={(dataUrl) => {
+          onCapture={(dataUrl, meta) => {
             const field = capture
             setCapture(null)
-            upload(field, dataUrl)
+            upload(field, dataUrl, meta)
           }}
         />
       )}

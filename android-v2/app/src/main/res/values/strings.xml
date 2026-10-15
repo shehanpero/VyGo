@@ -2,10 +2,11 @@
 <resources>
     <string name="app_name">VyGo</string>
     <string name="server_setup_title">Connect to your VyGo server</string>
-    <string name="server_setup_subtitle">Enter the address of the VyGo backend running on your network.</string>
+    <string name="server_setup_subtitle">Connect to the hosted VyGo backend to use the app on any network, or enter a local server address.</string>
     <string name="server_url_label">Server address</string>
-    <string name="server_url_hint">http://192.168.1.10:8080</string>
+    <string name="server_url_hint">https://vygo-perovin.pages.dev</string>
     <string name="action_test">Test connection</string>
+    <string name="action_use_hosted">Use hosted VyGo (works anywhere)</string>
     <string name="action_continue">Continue</string>
     <string name="action_change_server">Change server</string>
     <string name="action_retry">Retry</string>
