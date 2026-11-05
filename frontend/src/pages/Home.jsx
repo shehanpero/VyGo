@@ -343,7 +343,7 @@ export default function Home() {
     <div>
       {/* Hero — bus driving across the dusk expressway behind a dark gradient
           (LCP-friendly inline SVG, see docs/performance.md rec #5) */}
-      <section className="relative mb-10 overflow-hidden rounded-3xl border border-slate-800/70">
+      <section className="hero-section relative mb-10 overflow-hidden rounded-3xl border border-slate-800/70">
         <div className="absolute inset-0 bg-slate-950">
           <HeroBusScene />
           <div className="absolute inset-0 bg-gradient-to-br from-slate-950/85 via-slate-950/70 to-violet-950/40" />

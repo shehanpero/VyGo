@@ -9,7 +9,20 @@ import { motion, useMotionValue, useSpring, useReducedMotion } from 'framer-moti
  */
 export default function InteractiveCursor() {
   const reduceMotion = useReducedMotion()
+  const [isLight, setIsLight] = useState(() => {
+    if (typeof document === 'undefined') return false
+    return document.documentElement.dataset.theme === 'light'
+  })
   const [visible, setVisible] = useState(false)
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+    const sync = () => setIsLight(document.documentElement.dataset.theme === 'light')
+    sync()
+    const obs = new MutationObserver(sync)
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] })
+    return () => obs.disconnect()
+  }, [])
   const [hovered, setHovered] = useState(false)
   const [active, setActive] = useState(false)
 
@@ -79,11 +92,19 @@ export default function InteractiveCursor() {
         animate={{
           opacity: visible ? 1 : 0,
           scale: active ? 0.75 : hovered ? 1.6 : 1,
-          borderColor: hovered ? 'rgba(34, 211, 238, 0.9)' : 'rgba(34, 211, 238, 0.4)',
-          backgroundColor: hovered ? 'rgba(34, 211, 238, 0.12)' : 'rgba(34, 211, 238, 0.02)',
-          boxShadow: hovered
-            ? '0 0 20px 2px rgba(34, 211, 238, 0.5), inset 0 0 10px rgba(34, 211, 238, 0.2)'
-            : '0 0 10px rgba(34, 211, 238, 0.2)',
+          borderColor: isLight
+            ? (hovered ? 'rgba(2, 6, 23, 0.9)' : 'rgba(2, 6, 23, 0.45)')
+            : (hovered ? 'rgba(34, 211, 238, 0.9)' : 'rgba(34, 211, 238, 0.4)'),
+          backgroundColor: isLight
+            ? (hovered ? 'rgba(2, 6, 23, 0.12)' : 'rgba(2, 6, 23, 0.02)')
+            : (hovered ? 'rgba(34, 211, 238, 0.12)' : 'rgba(34, 211, 238, 0.02)'),
+          boxShadow: isLight
+            ? (hovered
+                ? '0 0 20px 2px rgba(2, 6, 23, 0.35), inset 0 0 10px rgba(2, 6, 23, 0.12)'
+                : '0 0 10px rgba(2, 6, 23, 0.18)')
+            : (hovered
+                ? '0 0 20px 2px rgba(34, 211, 238, 0.5), inset 0 0 10px rgba(34, 211, 238, 0.2)'
+                : '0 0 10px rgba(34, 211, 238, 0.2)'),
         }}
         transition={{
           scale: { type: 'spring', stiffness: 450, damping: 25 },
@@ -91,17 +112,11 @@ export default function InteractiveCursor() {
           borderColor: { duration: 0.2 },
           backgroundColor: { duration: 0.2 },
         }}
-        className="fixed top-0 left-0 h-9 w-9 rounded-full border border-cyan-400/40 backdrop-blur-[1px]"
+        className="fixed top-0 left-0 h-9 w-9 rounded-full border backdrop-blur-[1px]"
       />
 
       {/* Center precision laser dot */}
       <motion.div
-        style={{
-          x: mouseX,
-          y: mouseY,
-          translateX: '-50%',
-          translateY: '-50%',
-        }}
         animate={{
           opacity: visible ? 1 : 0,
           scale: active ? 0.6 : hovered ? 0.8 : 1,
@@ -110,7 +125,14 @@ export default function InteractiveCursor() {
           scale: { type: 'spring', stiffness: 500, damping: 28 },
           opacity: { duration: 0.1 },
         }}
-        className="fixed top-0 left-0 h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_8px_2px_rgba(34,211,238,0.9)]"
+        className={`fixed top-0 left-0 h-1.5 w-1.5 rounded-full ${isLight ? 'shadow-[0_0_8px_2px_rgba(2,6,23,0.7)]' : 'bg-cyan-300 shadow-[0_0_8px_2px_rgba(34,211,238,0.9)]'}`}
+        style={{
+          x: mouseX,
+          y: mouseY,
+          translateX: '-50%',
+          translateY: '-50%',
+          backgroundColor: isLight ? '#020617' : '#67e8f9',
+        }}
       />
     </div>
   )

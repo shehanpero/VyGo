@@ -50,35 +50,51 @@
   }
 
   [data-theme="light"] {
-    --bg-base: #f8fafc;
-    --bg-surface: #ffffff;
-    --bg-surface-2: #f1f5f9;
-    --bg-surface-3: #e2e8f0;
-    --bg-chrome: #ffffff;
-    --bg-chrome-2: #f1f5f9;
-    --bg-chrome-3: #e2e8f0;
+    /* ── VyGo Light Mode — Premium Minimalist Glassmorphism ── */
+    --bg-base: #F4F9FF;
+    --bg-surface: #FFFFFF;
+    --bg-surface-2: #EEF6FF;
+    --bg-surface-3: #EEF6FF;
+    --bg-chrome: rgba(255, 255, 255, 0.78);
+    --bg-chrome-2: rgba(255, 255, 255, 0.72);
+    --bg-chrome-3: rgba(255, 255, 255, 0.66);
 
-    --border-default: #e2e8f0;
-    --border-strong: #cbd5e1;
-    --border-chrome: rgba(15, 23, 42, 0.08);
+    --border-default: rgba(190, 218, 246, 0.65);
+    --border-strong: rgba(190, 218, 246, 0.85);
+    --border-chrome: rgba(190, 218, 246, 0.65);
 
-    --text-high: #020617;
-    --text-base: #1e293b;
-    --text-muted: #475569;
-    --text-subtle: #64748b;
+    --text-high: #17345F;
+    --text-base: #17345F;
+    --text-muted: #526b8c;
+    --text-subtle: #526b8c;
+
+    --accent-400: #22D3EE;          /* Cyan */
+    --accent-500: #079BFF;          /* Electric Blue */
+    --accent-600: #079BFF;
 
     --header-bg: rgba(255, 255, 255, 0.85);
-    --header-border: rgba(226, 232, 240, 0.8);
-    --footer-bg: rgba(255, 255, 255, 0.7);
-    --drawer-bg: rgba(255, 255, 255, 0.98);
+    --header-border: rgba(190, 218, 246, 0.65);
+    --footer-bg: rgba(255, 255, 255, 0.75);
+    --drawer-bg: rgba(255, 255, 255, 0.92);
 
-    --glass-bg: linear-gradient(160deg, rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.42));
-    --glass-border: rgba(255, 255, 255, 0.75);
-    --glass-shadow: 0 16px 40px -16px rgba(15, 23, 42, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.95);
+    /* Glassmorphism */
+    --glass-bg: rgba(255, 255, 255, 0.78);
+    --glass-border: rgba(190, 218, 246, 0.65);
+    --glass-shadow: 0 8px 28px rgba(52, 132, 205, 0.10);
 
-    --scrollbar-track: #e2e8f0;
-    --scrollbar-thumb: #cbd5e1;
-    --scrollbar-thumb-hover: #94a3b8;
+    --scrollbar-track: #EEF6FF;
+    --scrollbar-thumb: rgba(190, 218, 246, 0.9);
+    --scrollbar-thumb-hover: rgba(52, 132, 205, 0.5);
+  }
+
+  /* Reusable glass panel */
+  .glass-panel {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 22px;
+    box-shadow: var(--glass-shadow);
+    -webkit-backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px);
   }
 
   html {
@@ -98,14 +114,15 @@
   }
 
   [data-theme="light"] * {
-    @apply border-slate-200;
+    @apply border-slate-300/40;
   }
 
   ::selection {
     background: rgba(34, 211, 238, 0.3);
     color: var(--text-high);
   }
-}
+
+  }
 
 @layer components {
   /* ── Core Components ── */
@@ -772,8 +789,8 @@
   }
 
   [data-theme="light"] .aurora {
-    opacity: 0.22;
-    mix-blend-mode: multiply;
+    opacity: 0.12;
+    mix-blend-mode: normal;
   }
 
   .aurora::before,
@@ -1102,4 +1119,276 @@ html.vygo-native #vygo-assistant-fab {
 html.vygo-native #vygo-assistant-dialog {
   bottom: calc(env(safe-area-inset-bottom, 0px) + 9rem);
   max-height: calc(var(--app-vh, 100vh) - 10rem);
+}
+
+
+[data-theme="light"] body { background: #F4F9FF; color: #17345F; }
+
+
+
+
+
+
+[data-theme="light"] [class*="bg-slate-9"],
+[data-theme="light"] [class*="bg-slate-8"],
+[data-theme="light"] [class*="bg-slate-7"] {
+  background-color: rgba(255, 255, 255, 0.78) !important;
+}
+
+[data-theme="light"] [class*="bg-slate-9"] {
+  background-color: rgba(255, 255, 255, 0.78) !important;
+}
+
+[data-theme="light"] [class*="bg-slate-9"] {
+  background-color: rgba(255, 255, 255, 0.78) !important;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border-color: rgba(190, 218, 246, 0.65);
+  box-shadow: 0 8px 28px rgba(52, 132, 205, 0.10);
+}
+
+[data-theme="light"] [class*="bg-slate-9"] {
+  background-color: rgba(255, 255, 255, 0.78) !important;
+}
+
+[data-theme="light"] [class*="bg-slate-9"] {
+  background-color: rgba(255, 255, 255, 0.78);
+}
+* { transition: background-color 0.45s ease, color 0.45s ease; }
+
+
+/* ── VyGo Light Mode — Premium Minimalist Glassmorphism overrides ── */
+
+/* Surfaces */
+[data-theme="light"] [class*="bg-slate-9"] {
+  background-color: rgba(255, 255, 255, 0.78) !important;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border-color: rgba(190, 218, 246, 0.65);
+  box-shadow: 0 8px 28px rgba(52, 132, 205, 0.10);
+}
+[data-theme="light"] [class*="bg-slate-8"] {
+  background-color: rgba(255, 255, 255, 0.78) !important;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border-color: rgba(190, 218, 246, 0.65);
+  box-shadow: 0 8px 28px rgba(52, 132, 205, 0.10);
+}
+[data-theme="light"] [class*="bg-slate-7"] {
+  background-color: rgba(255, 255, 255, 0.78) !important;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  border-color: rgba(190, 218, 246, 0.65);
+  box-shadow: 0 8px 28px rgba(52, 132, 205, 0.10);
+}
+[data-theme="light"] [class*="bg-slate-9"]:hover {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+}
+[data-theme="light"] [class*="bg-slate-8"]:hover {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+}
+[data-theme="light"] [class*="bg-slate-7"]:hover {
+  background-color: rgba(255, 255, 255, 0.92) !important;
+}
+
+/* Text */
+[data-theme="light"] .text-white {
+  color: #17345F !important;
+}
+[data-theme="light"] [class*="text-slate-50"] {
+  color: #17345F !important;
+}
+[data-theme="light"] [class*="text-slate-100"] {
+  color: #17345F !important;
+}
+[data-theme="light"] [class*="text-slate-200"] {
+  color: #17345F !important;
+}
+[data-theme="light"] [class*="text-slate-300"] {
+  color: #17345F !important;
+}
+[data-theme="light"] [class*="text-slate-400"] {
+  color: #526b8c !important;
+}
+[data-theme="light"] [class*="text-slate-500"] {
+  color: #526b8c !important;
+}
+[data-theme="light"] [class*="text-slate-600"] {
+  color: #526b8c !important;
+}
+
+/* Borders */
+[data-theme="light"] [class*="border-slate-7"] {
+  border-color: rgba(190, 218, 246, 0.65) !important;
+}
+[data-theme="light"] [class*="border-slate-8"] {
+  border-color: rgba(190, 218, 246, 0.65) !important;
+}
+[data-theme="light"] [class*="border-slate-9"] {
+  border-color: rgba(190, 218, 246, 0.65) !important;
+}
+
+/* Aurora */
+[data-theme="light"] .aurora {
+  opacity: 0.10;
+  mix-blend-mode: normal;
+}
+
+/* Glass surfaces */
+[data-theme="light"] .trip-card {
+  background: rgba(255, 255, 255, 0.78) !important;
+  border-color: rgba(190, 218, 246, 0.65) !important;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: 0 8px 28px rgba(52, 132, 205, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  color: #17345F;
+}
+[data-theme="light"] .stat-tile {
+  background: rgba(255, 255, 255, 0.78) !important;
+  border-color: rgba(190, 218, 246, 0.65) !important;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: 0 8px 28px rgba(52, 132, 205, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  color: #17345F;
+}
+[data-theme="light"] .card {
+  background: rgba(255, 255, 255, 0.78) !important;
+  border-color: rgba(190, 218, 246, 0.65) !important;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: 0 8px 28px rgba(52, 132, 205, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  color: #17345F;
+}
+[data-theme="light"] .card-chrome {
+  background: rgba(255, 255, 255, 0.78) !important;
+  border-color: rgba(190, 218, 246, 0.65) !important;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: 0 8px 28px rgba(52, 132, 205, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  color: #17345F;
+}
+[data-theme="light"] .card-panel {
+  background: rgba(255, 255, 255, 0.78) !important;
+  border-color: rgba(190, 218, 246, 0.65) !important;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: 0 8px 28px rgba(52, 132, 205, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  color: #17345F;
+}
+[data-theme="light"] .glass-panel {
+  background: rgba(255, 255, 255, 0.78) !important;
+  border-color: rgba(190, 218, 246, 0.65) !important;
+  backdrop-filter: blur(18px) saturate(160%);
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  box-shadow: 0 8px 28px rgba(52, 132, 205, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  color: #17345F;
+}
+
+/* Buttons */
+[data-theme="light"] .btn-secondary {
+  background: rgba(255, 255, 255, 0.78) !important;
+  color: #17345F !important;
+  border-color: rgba(190, 218, 246, 0.65) !important;
+}
+[data-theme="light"] .btn-ghost {
+  color: #7186A5 !important;
+}
+[data-theme="light"] .btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.6) !important;
+  color: #17345F !important;
+}
+
+/* Inputs */
+[data-theme="light"] .input {
+  background: rgba(255, 255, 255, 0.78) !important;
+  color: #17345F !important;
+  border-color: rgba(190, 218, 246, 0.65) !important;
+}
+
+/* ── Light Mode: clean hero (remove dark dusk scene + overlay) ── */
+[data-theme="light"] .hero-stage {
+  display: none !important;
+}
+[data-theme="light"] [class*="from-slate-950/85"] {
+  display: none !important;
+}
+[data-theme="light"] [class*="bg-nexus-500/20"] {
+  display: none !important;
+}
+[data-theme="light"] [class*="bg-violet-500/20"] {
+  display: none !important;
+}
+[data-theme="light"] [class*="scan-divider"] {
+  display: none !important;
+}
+
+/* ── Light Mode corrective fixes ── */
+
+
+/* Get the app button (btn-holo) */
+[data-theme="light"] .btn-holo {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border: 1px solid rgba(34, 211, 238, 0.45) !important;
+  color: #0891b2 !important;
+  backdrop-filter: blur(12px) saturate(160%);
+  -webkit-backdrop-filter: blur(12px) saturate(160%);
+  box-shadow: 0 4px 16px rgba(52, 132, 205, 0.08) !important;
+}
+[data-theme="light"] .btn-holo:hover {
+  background: rgba(255, 255, 255, 0.95) !important;
+  color: #0284c7 !important;
+  border-color: rgba(34, 211, 238, 0.7) !important;
+}
+
+/* Booking panel (glass-strong) soft blue shadow */
+[data-theme="light"] .glass-strong {
+  box-shadow: 0 8px 28px rgba(52, 132, 205, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Route chips (route-pill) */
+[data-theme="light"] .route-pill {
+  background: rgba(255, 255, 255, 0.85) !important;
+  border-color: rgba(190, 218, 246, 0.65) !important;
+  color: #17345F !important;
+}
+[data-theme="light"] .route-pill:hover {
+  background: rgba(240, 248, 255, 0.95) !important;
+  border-color: rgba(34, 211, 238, 0.45) !important;
+  color: #0891b2 !important;
+}
+[data-theme="light"] .route-pill--expressway {
+  background: rgba(34, 211, 238, 0.12) !important;
+  border-color: rgba(34, 211, 238, 0.45) !important;
+  color: #0891b2 !important;
+}
+
+/* Typewriter / E01 label darker cyan */
+[data-theme="light"] .text-nexus-300 {
+  color: #0891b2 !important;
+}
+
+/* Hero subtle gradient (light mode only) */
+[data-theme="light"] .hero-section {
+  background: linear-gradient(135deg, #ffffff 0%, #f4f9ff 48%, #edf6ff 100%);
+}
+[data-theme="light"] .hero-section > div.absolute.inset-0 {
+  background: linear-gradient(135deg, #ffffff 0%, #f4f9ff 48%, #edf6ff 100%) !important;
+}
+
+/* ── Light Mode final polish ── */
+
+/* Route endpoint chips (badge-aurora): navy text on pale cyan */
+[data-theme="light"] .badge-aurora {
+  background: rgba(34, 211, 238, 0.12) !important;
+  border-color: rgba(34, 211, 238, 0.4) !important;
+  color: #17345F !important;
+}
+
+/* Booking panel soft glass */
+[data-theme="light"] .glass-strong {
+  background: rgba(255, 255, 255, 0.82) !important;
+  border-color: rgba(190, 218, 246, 0.65) !important;
+  box-shadow: 0 8px 28px rgba(52, 132, 205, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(16px) saturate(160%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
 }

@@ -24,7 +24,7 @@
           var reduced = motion === 'reduced' ||
             (motion === 'system' && window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
           if (reduced) document.documentElement.classList.add('reduce-motion');
-          document.getElementById('theme-color-meta').setAttribute('content', dark ? '#020617' : '#eef2f7');
+          document.getElementById('theme-color-meta').setAttribute('content', dark ? '#020617' : '#F4F9FF');
         } catch (e) {}
       })();
     </script>
