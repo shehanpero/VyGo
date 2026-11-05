@@ -1,0 +1,4 @@
+# Cloudflare Pages redirects/proxy
+/api/*  https://vygo-backend.onrender.com/api/:splat  200
+/uploads/*  https://vygo-backend.onrender.com/uploads/:splat  200
+/*  /index.html  200
