@@ -33,7 +33,7 @@ public class AppDownloadController {
 
     public AppDownloadController(
             @Value("${app.download.apk-path:../android-v2/app/build/outputs/apk/release/app-release.apk}") String apkPath,
-            @Value("${app.download.version:2.0.1}") String version) {
+            @Value("${app.download.version:2.0.3}") String version) {
         this.apkPath = apkPath;
         this.version = version;
     }
