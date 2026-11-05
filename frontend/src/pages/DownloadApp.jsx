@@ -29,9 +29,9 @@ function formatSize(bytes) {
 export default function DownloadApp() {
   const native = isNativePlatform()
   const apiBase = native ? `${localStorage.getItem(API_BASE_KEY) || ''}/api/v1` : '/api/v1'
-  const downloadUrl = `${apiBase}/app/download`
 
   const [info, setInfo] = useState(null)
+  const downloadUrl = info?.static ? '/vygo-2.0.3.apk' : `${apiBase}/app/download`
 
   useEffect(() => {
     let active = true
@@ -41,7 +41,9 @@ export default function DownloadApp() {
         if (active) setInfo(res.data)
       })
       .catch(() => {
-        if (active) setInfo({ available: false })
+        // Backend may be asleep/unavailable on the free tier. Fall back to the
+        // APK shipped as a static asset so the download still works.
+        if (active) setInfo({ available: true, version: '2.0.3', sizeBytes: null, static: true })
       })
     return () => {
       active = false

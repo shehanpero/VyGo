@@ -111,7 +111,7 @@ const vendorChunkGroups = {
 export default defineConfig({
   plugins: [react(), vygoAssets()],
   server: {
-    watch: { ignored: ['**/dist-single/**', '**/dist/**'] },
+    watch: { ignored: ['**/dist-single/**', '**/dist/**', '**/public/**/*.apk'] },
     port: 5173,
     // Bind 0.0.0.0 so the Expo WebView on a phone on the same LAN can reach the
     // dev server at http://<PC-LAN-IP>:5173.
